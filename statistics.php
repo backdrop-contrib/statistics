@@ -8,12 +8,12 @@
 /**
 * Root directory of Backdrop installation.
 */
-define('DRUPAL_ROOT', substr($_SERVER['SCRIPT_FILENAME'], 0, strpos($_SERVER['SCRIPT_FILENAME'], '/modules/statistics/statistics.php')));
+define('BACKDROP_ROOT', substr($_SERVER['SCRIPT_FILENAME'], 0, strpos($_SERVER['SCRIPT_FILENAME'], '/modules/statistics/statistics.php')));
 // Change the directory to the Backdrop root.
-chdir(DRUPAL_ROOT);
+chdir(BACKDROP_ROOT);
 
-include_once DRUPAL_ROOT . '/includes/bootstrap.inc';
-backdrop_bootstrap(DRUPAL_BOOTSTRAP_VARIABLES);
+include_once BACKDROP_ROOT . '/core/includes/bootstrap.inc';
+backdrop_bootstrap(BACKDROP_BOOTSTRAP_VARIABLES);
 $config = config('statistics.settings');
 if ($config->get('statistics_count_content_views') && $config->get('statistics_count_content_views_ajax')) {
   if (isset($_POST['nid'])) {
