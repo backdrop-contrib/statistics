@@ -10,7 +10,7 @@
  *
  * @return
  *   A render array containing node statistics. If information for the node was
- *   not found, this will deliver a page not found error via drupal_not_found().
+ *   not found, this will deliver a page not found error via backdrop_not_found().
  */
 function statistics_node_tracker() {
   if ($node = node_load(arg(1))) {
@@ -44,7 +44,7 @@ function statistics_node_tracker() {
       );
     }
 
-    drupal_set_title($node->title);
+    backdrop_set_title($node->title);
     $build['statistics_table'] = array(
       '#theme' => 'table',
       '#header' => $header,
@@ -62,7 +62,7 @@ function statistics_node_tracker() {
  *
  * @return array
  *   A render array containing user statistics. If information for the user was
- *   not found, this will deliver a page not found error via drupal_not_found().
+ *   not found, this will deliver a page not found error via backdrop_not_found().
  */
 function statistics_user_tracker() {
   if ($account = user_load(arg(1))) {
@@ -87,7 +87,7 @@ function statistics_user_tracker() {
         l(t('details'), "admin/reports/access/$log->aid"));
     }
 
-    drupal_set_title(format_username($account));
+    backdrop_set_title(format_username($account));
     $build['statistics_table'] = array(
       '#theme' => 'table',
       '#header' => $header,

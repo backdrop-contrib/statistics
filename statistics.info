@@ -1,7 +1,6 @@
 name = Statistics
 description = Logs access statistics for your site.
-package = Core
-version = VERSION
-core = 7.x
-files[] = statistics.test
+package = Statistics
+version = 1.x-1.x
+backdrop = 1.x
 configure = admin/config/system/statistics

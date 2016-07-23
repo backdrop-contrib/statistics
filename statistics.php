@@ -6,15 +6,16 @@
  */
 
 /**
-* Root directory of Drupal installation.
+* Root directory of Backdrop installation.
 */
 define('DRUPAL_ROOT', substr($_SERVER['SCRIPT_FILENAME'], 0, strpos($_SERVER['SCRIPT_FILENAME'], '/modules/statistics/statistics.php')));
-// Change the directory to the Drupal root.
+// Change the directory to the Backdrop root.
 chdir(DRUPAL_ROOT);
 
 include_once DRUPAL_ROOT . '/includes/bootstrap.inc';
-drupal_bootstrap(DRUPAL_BOOTSTRAP_VARIABLES);
-if (variable_get('statistics_count_content_views', 0) && variable_get('statistics_count_content_views_ajax', 0)) {
+backdrop_bootstrap(DRUPAL_BOOTSTRAP_VARIABLES);
+$config = config('statistics.settings');
+if ($config->get('statistics_count_content_views') && $config->get('statistics_count_content_views_ajax')) {
   if (isset($_POST['nid'])) {
     $nid = $_POST['nid'];
     if (is_numeric($nid)) {

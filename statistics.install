@@ -6,21 +6,6 @@
  */
 
 /**
- * Implements hook_uninstall().
- */
-function statistics_uninstall() {
-  // Remove variables.
-  variable_del('statistics_count_content_views');
-  variable_del('statistics_count_content_views_ajax');
-  variable_del('statistics_enable_access_log');
-  variable_del('statistics_flush_accesslog_timer');
-  variable_del('statistics_day_timestamp');
-  variable_del('statistics_block_top_day_num');
-  variable_del('statistics_block_top_all_num');
-  variable_del('statistics_block_top_last_num');
-}
-
-/**
  * Implements hook_schema().
  */
 function statistics_schema() {
@@ -49,7 +34,7 @@ function statistics_schema() {
         'type' => 'varchar',
         'length' => 255,
         'not null' => FALSE,
-        'description' => 'Internal path to page visited (relative to Drupal root.)',
+        'description' => 'Internal path to page visited (relative to Backdrop root.)',
       ),
       'url' => array(
         'type' => 'text',
@@ -137,23 +122,30 @@ function statistics_schema() {
 }
 
 /**
- * @addtogroup updates-6.x-to-7.x
- * @{
+ * Update
  */
+function statistics_update_1000() {
+  $config = config('statistics.settings');
+  $config->set('statistics_count_content_views', update_variable_get('statistics_count_content_views', ''));
+  $config->set('statistics_count_content_views_ajax', update_variable_get('statistics_count_content_views_ajax', ''));
+  $config->set('statistics_enable_access_log', update_variable_get('statistics_enable_access_log', ''));
+  $config->set('statistics_flush_accesslog_timer', update_variable_get('statistics_flush_accesslog_timer', ''));
+  $config->set('statistics_day_timestamp', update_variable_get('statistics_day_timestamp', ''));
+  $config->set('statistics_block_top_day_num', update_variable_get('statistics_block_top_day_num', ''));
+  $config->set('statistics_block_top_all_num', update_variable_get('statistics_block_top_all_num', ''));
+  $config->set('statistics_block_top_last_num', update_variable_get('statistics_block_top_last_num', ''));
+  $config->save();
 
-/**
- * Update the {accesslog}.sid column to match the length of {sessions}.sid
- */
-function statistics_update_7000() {
-  db_change_field('accesslog', 'sid', 'sid', array(
-    'type' => 'varchar',
-    'length' => 128,
-    'not null' => TRUE,
-    'default' => '',
-    'description' => 'Browser session ID of user that visited page.',
-  ));
+  update_variable_del('statistics_count_content_views');
+  update_variable_del('statistics_count_content_views_ajax');
+  update_variable_del('statistics_enable_access_log');
+  update_variable_del('statistics_flush_accesslog_timer');
+  update_variable_del('statistics_day_timestamp');
+  update_variable_del('statistics_block_top_day_num');
+  update_variable_del('statistics_block_top_all_num');
+  update_variable_del('statistics_block_top_last_num');
 }
 
-/**
- * @} End of "addtogroup updates-6.x-to-7.x".
- */
+function statistics_update_last_removed() {
+  return 7000;
+}

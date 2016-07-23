@@ -93,7 +93,7 @@ function statistics_top_pages() {
     $rows[] = array($page->hits, _statistics_format_item($page->title, $page->path), t('%time ms', array('%time' => round($page->average_time))), format_interval(round($page->total_time / 1000)));
   }
 
-  drupal_set_title(t('Top pages in the past %interval', array('%interval' => format_interval(variable_get('statistics_flush_accesslog_timer', 259200)))), PASS_THROUGH);
+  backdrop_set_title(t('Top pages in the past %interval', array('%interval' => format_interval(config_get('statistics.settings', 'statistics_flush_accesslog_timer')))), PASS_THROUGH);
   $build['statistics_top_pages_table'] = array(
     '#theme' => 'table',
     '#header' => $header,
@@ -148,13 +148,13 @@ function statistics_top_visitors() {
 
   $result = $query->execute();
   $rows = array();
-  $destination = drupal_get_destination();
+  $destination = backdrop_get_destination();
   foreach ($result as $account) {
     $ban_link = $account->iid ? l(t('unblock IP address'), "admin/config/people/ip-blocking/delete/$account->iid", array('query' => $destination)) : l(t('block IP address'), "admin/config/people/ip-blocking/$account->hostname", array('query' => $destination));
     $rows[] = array($account->hits, ($account->uid ? theme('username', array('account' => $account)) : $account->hostname), format_interval(round($account->total / 1000)), (user_access('block IP addresses') && !$account->uid) ? $ban_link : '');
   }
 
-  drupal_set_title(t('Top visitors in the past %interval', array('%interval' => format_interval(variable_get('statistics_flush_accesslog_timer', 259200)))), PASS_THROUGH);
+  backdrop_set_title(t('Top visitors in the past %interval', array('%interval' => format_interval(config_get('statistics.settings', 'statistics_flush_accesslog_timer')))), PASS_THROUGH);
   $build['statistics_top_visitors_table'] = array(
     '#theme' => 'table',
     '#header' => $header,
@@ -176,7 +176,7 @@ function statistics_top_visitors() {
  *   A render array containing the top referrers information.
  */
 function statistics_top_referrers() {
-  drupal_set_title(t('Top referrers in the past %interval', array('%interval' => format_interval(variable_get('statistics_flush_accesslog_timer', 259200)))), PASS_THROUGH);
+  backdrop_set_title(t('Top referrers in the past %interval', array('%interval' => format_interval(config_get('statistics.settings', 'statistics_flush_accesslog_timer')))), PASS_THROUGH);
 
   $header = array(
     array('data' => t('Hits'), 'field' => 'hits', 'sort' => 'desc'),
@@ -226,7 +226,7 @@ function statistics_top_referrers() {
  *
  * @return
  *   A render array containing page access statistics. If information for the
- *   page was not found, drupal_not_found() is called.
+ *   page was not found, backdrop_not_found() is called.
  */
 function statistics_access_log($aid) {
   $access = db_query('SELECT a.*, u.name FROM {accesslog} a LEFT JOIN {users} u ON a.uid = u.uid WHERE aid = :aid', array(':aid' => $aid))->fetch();
@@ -236,7 +236,7 @@ function statistics_access_log($aid) {
       l(url($access->path, array('absolute' => TRUE)), $access->path)
     );
     // It is safe to avoid filtering $access->title through check_plain because
-    // it comes from drupal_get_title().
+    // it comes from backdrop_get_title().
     $rows[] = array(
       array('data' => t('Title'), 'header' => TRUE),
       $access->title
@@ -274,6 +274,7 @@ function statistics_access_log($aid) {
  * @see system_settings_form()
  */
 function statistics_settings_form() {
+  $config = config('statistics.settings');
   // Access log settings.
   $form['access'] = array(
     '#type' => 'fieldset',
@@ -282,14 +283,14 @@ function statistics_settings_form() {
   $form['access']['statistics_enable_access_log'] = array(
     '#type' => 'checkbox',
     '#title' => t('Enable access log'),
-    '#default_value' => variable_get('statistics_enable_access_log', 0),
+    '#default_value' => $config->get('statistics_enable_access_log'),
     '#description' => t('Log each page access. Required for referrer statistics.'),
   );
   $form['access']['statistics_flush_accesslog_timer'] = array(
     '#type' => 'select',
     '#title' => t('Discard access logs older than'),
-    '#default_value' => variable_get('statistics_flush_accesslog_timer', 259200),
-    '#options' => array(0 => t('Never')) + drupal_map_assoc(array(3600, 10800, 21600, 32400, 43200, 86400, 172800, 259200, 604800, 1209600, 2419200, 4838400, 9676800), 'format_interval'),
+    '#default_value' => $config->get('statistics_flush_accesslog_timer'),
+    '#options' => array(0 => t('Never')) + backdrop_map_assoc(array(3600, 10800, 21600, 32400, 43200, 86400, 172800, 259200, 604800, 1209600, 2419200, 4838400, 9676800), 'format_interval'),
     '#description' => t('Older access log entries (including referrer statistics) will be automatically discarded. (Requires a correctly configured <a href="@cron">cron maintenance task</a>.)', array('@cron' => url('admin/reports/status'))),
   );
 
@@ -301,13 +302,13 @@ function statistics_settings_form() {
   $form['content']['statistics_count_content_views'] = array(
     '#type' => 'checkbox',
     '#title' => t('Count content views'),
-    '#default_value' => variable_get('statistics_count_content_views', 0),
+    '#default_value' => $config->get('statistics_count_content_views'),
     '#description' => t('Increment a counter each time content is viewed.'),
   );
   $form['content']['statistics_count_content_views_ajax'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use Ajax to increment the counter'),
-    '#default_value' => variable_get('statistics_count_content_views_ajax', 0),
+    '#default_value' => $config->get('statistics_count_content_views_ajax'),
     '#description' => t('Perform the count asynchronously after page load rather than during page generation.'),
     '#states' => array(
       'disabled' => array(
@@ -316,5 +317,21 @@ function statistics_settings_form() {
     ),
   );
 
-  return system_settings_form($form);
+  $form['actions']['#type'] = 'actions';
+  $form['actions']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save configuration'),
+  );
+
+  return $form;
+}
+
+function statistics_settings_form_submit($form, &$form_state) {
+  $config = config('statistics.settings');
+  $config->set('statistics_enable_access_log', $form_state['values']['statistics_enable_access_log']);
+  $config->set('statistics_flush_accesslog_timer', $form_state['values']['statistics_flush_accesslog_timer']);
+  $config->set('statistics_count_content_views', $form_state['values']['statistics_count_content_views']);
+  $config->set('statistics_count_content_views_ajax', $form_state['values']['statistics_count_content_views_ajax']);
+  $config->save();
+  backdrop_set_message(t('The configuration options have been saved.'));
 }

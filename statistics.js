@@ -3,8 +3,8 @@
     $.ajax({
       type: "POST",
       cache: false,
-      url: Drupal.settings.statistics.url,
-      data: Drupal.settings.statistics.data
+      url: Backdrop.settings.statistics.url,
+      data: Backdrop.settings.statistics.data
     });
   });
 })(jQuery);
