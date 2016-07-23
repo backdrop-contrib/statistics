@@ -126,14 +126,15 @@ function statistics_schema() {
  */
 function statistics_update_1000() {
   $config = config('statistics.settings');
-  $config->set('statistics_count_content_views', update_variable_get('statistics_count_content_views', ''));
-  $config->set('statistics_count_content_views_ajax', update_variable_get('statistics_count_content_views_ajax', ''));
-  $config->set('statistics_enable_access_log', update_variable_get('statistics_enable_access_log', ''));
-  $config->set('statistics_flush_accesslog_timer', update_variable_get('statistics_flush_accesslog_timer', ''));
-  $config->set('statistics_day_timestamp', update_variable_get('statistics_day_timestamp', ''));
-  $config->set('statistics_block_top_day_num', update_variable_get('statistics_block_top_day_num', ''));
-  $config->set('statistics_block_top_all_num', update_variable_get('statistics_block_top_all_num', ''));
-  $config->set('statistics_block_top_last_num', update_variable_get('statistics_block_top_last_num', ''));
+  $config->set('count_content_views', update_variable_get('statistics_count_content_views', ''));
+  $config->set('count_content_views_ajax', update_variable_get('statistics_count_content_views_ajax', ''));
+  $config->set('enable_access_log', update_variable_get('statistics_enable_access_log', ''));
+  $config->set('flush_accesslog_timer', update_variable_get('statistics_flush_accesslog_timer', ''));
+  $config->set('day_timestamp', update_variable_get('statistics_day_timestamp', ''));
+  $config->set('block_top_day_num', update_variable_get('statistics_block_top_day_num', ''));
+  $config->set('block_top_all_num', update_variable_get('statistics_block_top_all_num', ''));
+  $config->set('block_top_last_num', update_variable_get('statistics_block_top_last_num', ''));
+  $config->set('cron_views_scale', update_variable_get('node_cron_views_scale', ''));
   $config->save();
 
   update_variable_del('statistics_count_content_views');

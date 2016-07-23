@@ -15,7 +15,7 @@ chdir(BACKDROP_ROOT);
 include_once BACKDROP_ROOT . '/core/includes/bootstrap.inc';
 backdrop_bootstrap(BACKDROP_BOOTSTRAP_VARIABLES);
 $config = config('statistics.settings');
-if ($config->get('statistics_count_content_views') && $config->get('statistics_count_content_views_ajax')) {
+if ($config->get('count_content_views') && $config->get('count_content_views_ajax')) {
   if (isset($_POST['nid'])) {
     $nid = $_POST['nid'];
     if (is_numeric($nid)) {

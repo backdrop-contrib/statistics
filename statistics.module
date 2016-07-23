@@ -17,11 +17,11 @@ function statistics_exit() {
   // When serving cached pages with the 'page_cache_without_database'
   // configuration, system variables need to be loaded. This is a major
   // performance decrease for non-database page caches, but with Statistics
-  // module, it is likely to also have 'statistics_enable_access_log' enabled,
+  // module, it is likely to also have 'enable_access_log' enabled,
   // in which case we need to bootstrap to the session phase anyway.
   backdrop_bootstrap(BACKDROP_BOOTSTRAP_VARIABLES);
 
-  if ($config->get('statistics_count_content_views') && !$config->get('statistics_count_content_views_ajax')) {
+  if ($config->get('count_content_views') && !$config->get('count_content_views_ajax')) {
     // We are counting content views.
     if (arg(0) == 'node' && is_numeric(arg(1)) && arg(2) == NULL) {
       // A node has been viewed, so update the node's counters.
@@ -37,7 +37,7 @@ function statistics_exit() {
         ->execute();
     }
   }
-  if ($config->get('statistics_enable_access_log')) {
+  if ($config->get('enable_access_log')) {
     backdrop_bootstrap(BACKDROP_BOOTSTRAP_SESSION);
 
     // For anonymous users unicode.inc will not have been loaded.
@@ -81,7 +81,7 @@ function statistics_permission() {
 function statistics_node_view($node, $view_mode) {
   $config = config('statistics.settings');
   // Attach Ajax node count statistics if configured.
-  if ($config->get('statistics_count_content_views') && $config->get('statistics_count_content_views_ajax')) {
+  if ($config->get('count_content_views') && $config->get('count_content_views_ajax')) {
     if (!empty($node->nid) && $view_mode == 'full' && node_is_page($node) && empty($node->in_preview)) {
       $statistics = backdrop_get_path('module', 'statistics') . '/statistics.js';
       $node->content['#attached']['js'][$statistics] = array(
@@ -211,21 +211,21 @@ function statistics_user_delete($account) {
  */
 function statistics_cron() {
   $config = config('statistics.settings');
-  $statistics_timestamp = $config->get('statistics_day_timestamp');
+  $statistics_timestamp = $config->get('day_timestamp');
 
   if ((REQUEST_TIME - $statistics_timestamp) >= 86400) {
     // Reset day counts.
     db_update('node_counter')
       ->fields(array('daycount' => 0))
       ->execute();
-    $config->set('statistics_day_timestamp', REQUEST_TIME);
+    $config->set('day_timestamp', REQUEST_TIME);
     $config->save();
   }
 
   // Clean up expired access logs (if applicable).
-  if ($config->get('statistics_flush_accesslog_timer') > 0) {
+  if ($config->get('flush_accesslog_timer') > 0) {
     db_delete('accesslog')
-      ->condition('timestamp', REQUEST_TIME - $config->get('statistics_flush_accesslog_timer'), '<')
+      ->condition('timestamp', REQUEST_TIME - $config->get('flush_accesslog_timer'), '<')
       ->execute();
   }
 }
@@ -294,7 +294,7 @@ function statistics_get($nid) {
 function statistics_block_info() {
   $blocks = array();
 
-  if (config_get('statistics.settings', 'statistics_count_content_views')) {
+  if (config_get('statistics.settings', 'count_content_views')) {
     $blocks['popular']['info'] = t('Popular content');
     // Too dynamic to cache.
     $blocks['popular']['cache'] = BACKDROP_NO_CACHE;
@@ -309,9 +309,9 @@ function statistics_block_configure($delta = '') {
   $config = config('statistics.settings');
   // Popular content block settings
   $numbers = array('0' => t('Disabled')) + backdrop_map_assoc(array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40));
-  $form['statistics_block_top_day_num'] = array('#type' => 'select', '#title' => t("Number of day's top views to display"), '#default_value' => $config->get('statistics_block_top_day_num'), '#options' => $numbers, '#description' => t('How many content items to display in "day" list.'));
-  $form['statistics_block_top_all_num'] = array('#type' => 'select', '#title' => t('Number of all time views to display'), '#default_value' => $config->get('statistics_block_top_all_num'), '#options' => $numbers, '#description' => t('How many content items to display in "all time" list.'));
-  $form['statistics_block_top_last_num'] = array('#type' => 'select', '#title' => t('Number of most recent views to display'), '#default_value' => $config->get('statistics_block_top_last_num'), '#options' => $numbers, '#description' => t('How many content items to display in "recently viewed" list.'));
+  $form['block_top_day_num'] = array('#type' => 'select', '#title' => t("Number of day's top views to display"), '#default_value' => $config->get('block_top_day_num'), '#options' => $numbers, '#description' => t('How many content items to display in "day" list.'));
+  $form['block_top_all_num'] = array('#type' => 'select', '#title' => t('Number of all time views to display'), '#default_value' => $config->get('block_top_all_num'), '#options' => $numbers, '#description' => t('How many content items to display in "all time" list.'));
+  $form['block_top_last_num'] = array('#type' => 'select', '#title' => t('Number of most recent views to display'), '#default_value' => $config->get('block_top_last_num'), '#options' => $numbers, '#description' => t('How many content items to display in "recently viewed" list.'));
   return $form;
 }
 
@@ -320,9 +320,9 @@ function statistics_block_configure($delta = '') {
  */
 function statistics_block_save($delta = '', $edit = array()) {
   $config = config('statistics.settings');
-  $config->set('statistics_block_top_day_num', $edit['statistics_block_top_day_num']);
-  $config->set('statistics_block_top_all_num', $edit['statistics_block_top_all_num']);
-  $config->set('statistics_block_top_last_num', $edit['statistics_block_top_last_num']);
+  $config->set('block_top_day_num', $edit['block_top_day_num']);
+  $config->set('block_top_all_num', $edit['block_top_all_num']);
+  $config->set('block_top_last_num', $edit['block_top_last_num']);
   $config->save();
 }
 
@@ -334,19 +334,19 @@ function statistics_block_view($delta = '') {
   if (user_access('access content')) {
     $content = array();
 
-    $daytop = $config->get('statistics_block_top_day_num');
+    $daytop = $config->get('block_top_day_num');
     if ($daytop && ($result = statistics_title_list('daycount', $daytop)) && ($node_title_list = node_title_list($result, t("Today's:")))) {
       $content['top_day'] = $node_title_list;
       $content['top_day']['#suffix'] = '<br />';
     }
 
-    $alltimetop = $config->get('statistics_block_top_all_num');
+    $alltimetop = $config->get('block_top_all_num');
     if ($alltimetop && ($result = statistics_title_list('totalcount', $alltimetop)) && ($node_title_list = node_title_list($result, t('All time:')))) {
       $content['top_all'] = $node_title_list;
       $content['top_all']['#suffix'] = '<br />';
     }
 
-    $lasttop = $config->get('statistics_block_top_last_num');
+    $lasttop = $config->get('block_top_last_num');
     if ($lasttop && ($result = statistics_title_list('timestamp', $lasttop)) && ($node_title_list = node_title_list($result, t('Last viewed:')))) {
       $content['top_last'] = $node_title_list;
       $content['top_last']['#suffix'] = '<br />';
@@ -410,7 +410,7 @@ function statistics_node_delete($node) {
  */
 function statistics_ranking() {
   $config = config('statistics.settings');
-  if ($config->get('statistics_count_content_views')) {
+  if ($config->get('count_content_views')) {
     return array(
       'views' => array(
         'title' => t('Number of views'),

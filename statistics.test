@@ -26,8 +26,8 @@ class StatisticsTestCase extends BackdropWebTestCase {
     $this->backdropLogin($this->blocking_user);
 
     // Enable access logging.
-    config_set('statistics.settings', 'statistics_enable_access_log', 1);
-    config_set('statistics.settings', 'statistics_count_content_views', 1);
+    config_set('statistics.settings', 'enable_access_log', 1);
+    config_set('statistics.settings', 'count_content_views', 1);
 
     // Insert dummy access by anonymous user into access log.
     db_insert('accesslog')
@@ -72,8 +72,8 @@ class StatisticsLoggingTestCase extends BackdropWebTestCase {
     config_set('system.core', 'cache', TRUE);
 
     // Enable access logging.
-    config_set('statistics.settings', 'statistics_enable_access_log', 1);
-    config_set('statistics.settings', 'statistics_count_content_views', 1);
+    config_set('statistics.settings', 'enable_access_log', 1);
+    config_set('statistics.settings', 'count_content_views', 1);
 
     // Clear the logs.
     db_truncate('accesslog');
@@ -128,11 +128,11 @@ class StatisticsLoggingTestCase extends BackdropWebTestCase {
     $this->assertIdentical($node_counter['totalcount'], '3', 'Page request was not counted via Ajax.');
 
     // Test that Ajax logging occurs when enabled.
-    config_set('statistics.settings', 'statistics_count_content_views_ajax', 1);
+    config_set('statistics.settings', 'count_content_views_ajax', 1);
     backdrop_http_request($stats_path, array('method' => 'POST', 'data' => $post, 'headers' => $headers, 'timeout' => 10000));
     $node_counter = statistics_get($this->node->nid);
     $this->assertIdentical($node_counter['totalcount'], '4', 'Page request was counted via Ajax.');
-    config_set('statistics.settings', 'statistics_count_content_views_ajax', 0);
+    config_set('statistics.settings', 'count_content_views_ajax', 0);
 
     // Visit edit page to generate a title greater than 255.
     $path = 'node/' . $this->node->nid . '/edit';
@@ -236,7 +236,7 @@ class StatisticsReportsTestCase extends StatisticsTestCase {
     $block->region = 'sidebar_first';
     $block->cache = -1;
     $block->visibility = 0;
-    $edit = array('statistics_block_top_day_num' => 3, 'statistics_block_top_all_num' => 3, 'statistics_block_top_last_num' => 3);
+    $edit = array('block_top_day_num' => 3, 'block_top_all_num' => 3, 'block_top_last_num' => 3);
     module_invoke('statistics', 'block_save', 'popular', $edit);
     backdrop_write_record('block', $block);
 
@@ -341,18 +341,18 @@ class StatisticsAdminTestCase extends BackdropWebTestCase {
    * Verifies that the statistics settings page works.
    */
   function testStatisticsSettings() {
-    $this->assertFalse(config_get('statistics.settings', 'statistics_enable_access_log', 0), 'Access log is disabled by default.');
-    $this->assertFalse(config_get('statistics.settings', 'statistics_count_content_views', 0), 'Count content view log is disabled by default.');
+    $this->assertFalse(config_get('statistics.settings', 'enable_access_log', 0), 'Access log is disabled by default.');
+    $this->assertFalse(config_get('statistics.settings', 'count_content_views', 0), 'Count content view log is disabled by default.');
 
     $this->backdropGet('admin/reports/pages');
     $this->assertRaw(t('No statistics available.'), 'Verifying text shown when no statistics is available.');
 
     // Enable access log and counter on content view.
-    $edit['statistics_enable_access_log'] = 1;
-    $edit['statistics_count_content_views'] = 1;
+    $edit['enable_access_log'] = 1;
+    $edit['count_content_views'] = 1;
     $this->backdropPost('admin/config/system/statistics', $edit, t('Save configuration'));
-    $this->assertTrue(config_get('statistics.settings', 'statistics_enable_access_log'), 'Access log is enabled.');
-    $this->assertTrue(config_get('statistics.settings', 'statistics_count_content_views'), 'Count content view log is enabled.');
+    $this->assertTrue(config_get('statistics.settings', 'enable_access_log'), 'Access log is enabled.');
+    $this->assertTrue(config_get('statistics.settings', 'count_content_views'), 'Count content view log is enabled.');
 
     // Hit the node.
     $this->backdropGet('node/' . $this->test_node->nid);
@@ -373,7 +373,7 @@ class StatisticsAdminTestCase extends BackdropWebTestCase {
    * Tests that when a node is deleted, the node counter is deleted too.
    */
   function testDeleteNode() {
-    config_set('statistics.settings', 'statistics_count_content_views', 1);
+    config_set('statistics.settings', 'count_content_views', 1);
 
     $this->backdropGet('node/' . $this->test_node->nid);
 
@@ -398,7 +398,7 @@ class StatisticsAdminTestCase extends BackdropWebTestCase {
    * Tests that accesslog reflects when a user is deleted.
    */
   function testDeleteUser() {
-    config_set('statistics.settings', 'statistics_enable_access_log', 1);
+    config_set('statistics.settings', 'enable_access_log', 1);
 
     config_set('system.core', 'user_cancel_method', 'user_cancel_delete');
     $this->backdropLogout($this->privileged_user);
@@ -425,10 +425,10 @@ class StatisticsAdminTestCase extends BackdropWebTestCase {
    * Tests that cron clears day counts and expired access logs.
    */
   function testExpiredLogs() {
-    config_set('statistics.settings', 'statistics_enable_access_log', 1);
-    config_set('statistics.settings', 'statistics_count_content_views', 1);
-    config_set('statistics.settings', 'statistics_day_timestamp', 8640000);
-    config_set('statistics.settings', 'statistics_flush_accesslog_timer', 1);
+    config_set('statistics.settings', 'enable_access_log', 1);
+    config_set('statistics.settings', 'count_content_views', 1);
+    config_set('statistics.settings', 'day_timestamp', 8640000);
+    config_set('statistics.settings', 'flush_accesslog_timer', 1);
 
     $this->backdropGet('node/' . $this->test_node->nid);
     $this->backdropGet('node/' . $this->test_node->nid);
@@ -437,7 +437,7 @@ class StatisticsAdminTestCase extends BackdropWebTestCase {
     $this->backdropGet('admin/reports/pages');
     $this->assertText('node/' . $this->test_node->nid, 'Hit URL found.');
 
-    // statistics_cron will subtract the statistics_flush_accesslog_timer
+    // statistics_cron will subtract the flush_accesslog_timer
     // variable from REQUEST_TIME in the delete query, so wait two secs here to
     // make sure the access log will be flushed for the node just hit.
     sleep(2);
