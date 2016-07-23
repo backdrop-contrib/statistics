@@ -41,7 +41,7 @@ function statistics_exit() {
     backdrop_bootstrap(BACKDROP_BOOTSTRAP_SESSION);
 
     // For anonymous users unicode.inc will not have been loaded.
-    include_once BACKDROP_ROOT . '/includes/unicode.inc';
+    include_once BACKDROP_ROOT . '/core/includes/unicode.inc';
     // Log this page access.
     db_insert('accesslog')
       ->fields(array(
