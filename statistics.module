@@ -301,8 +301,7 @@ function statistics_block_info() {
 
   if (config_get('statistics.settings', 'count_content_views')) {
     $blocks['popular']['info'] = t('Popular content');
-    // Too dynamic to cache.
-    $blocks['popular']['cache'] = BACKDROP_NO_CACHE;
+    $blocks['popular']['description'] = t('Display popular content');
   }
   return $blocks;
 }
