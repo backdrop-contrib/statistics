@@ -22,10 +22,16 @@ if ($config->get('count_content_views') && $config->get('count_content_views_aja
       db_merge('node_counter')
         ->key(array('nid' => $nid))
         ->fields(array(
+          'yearcount' => 1,
+          'monthcount' => 1,
+          'weekcount' => 1,
           'daycount' => 1,
           'totalcount' => 1,
           'timestamp' => REQUEST_TIME,
         ))
+        ->expression('yearcount', 'yearcount + 1')
+        ->expression('monthcount', 'monthcount + 1')
+        ->expression('weekcount', 'weekcount + 1')
         ->expression('daycount', 'daycount + 1')
         ->expression('totalcount', 'totalcount + 1')
         ->execute();
