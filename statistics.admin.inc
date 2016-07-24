@@ -317,6 +317,25 @@ function statistics_settings_form() {
     ),
   );
 
+  $types = node_type_get_types();
+  $options = array();
+  foreach ($types as $type => $info) {
+    $options[$type] = check_plain(t($info->name));
+  }
+
+  $form['content']['count_node_types'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Content types'),
+    '#options' => $options,
+    '#default_value' => $config->get('count_node_types'),
+    '#description' => t('Choose one or more content types to count page views.'),
+    '#states' => array(
+      'visible' => array(
+        ':input[name="count_content_views"]' => array('checked' => TRUE),
+      ),
+    ),
+  );
+
   $form['actions']['#type'] = 'actions';
   $form['actions']['submit'] = array(
     '#type' => 'submit',
@@ -332,6 +351,7 @@ function statistics_settings_form_submit($form, &$form_state) {
   $config->set('flush_accesslog_timer', $form_state['values']['flush_accesslog_timer']);
   $config->set('count_content_views', $form_state['values']['count_content_views']);
   $config->set('count_content_views_ajax', $form_state['values']['count_content_views_ajax']);
+  $config->set('count_node_types', array_filter($form_state['values']['count_node_types']));
   $config->save();
   backdrop_set_message(t('The configuration options have been saved.'));
 }

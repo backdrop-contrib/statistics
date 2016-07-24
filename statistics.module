@@ -21,9 +21,11 @@ function statistics_exit() {
   // in which case we need to bootstrap to the session phase anyway.
   backdrop_bootstrap(BACKDROP_BOOTSTRAP_VARIABLES);
 
-  if ($config->get('count_content_views') && !$config->get('count_content_views_ajax')) {
-    // We are counting content views.
-    if (arg(0) == 'node' && is_numeric(arg(1)) && arg(2) == NULL) {
+  // We are counting content views.
+  if (arg(0) == 'node' && is_numeric(arg(1)) && arg(2) == NULL) {
+    $node = menu_get_object();
+    $count_node_types = $config->get('count_node_types');
+    if ($config->get('count_content_views') && in_array($node->type, $count_node_types) && !$config->get('count_content_views_ajax')) {
       // A node has been viewed, so update the node's counters.
       db_merge('node_counter')
         ->key(array('nid' => arg(1)))
@@ -80,8 +82,10 @@ function statistics_permission() {
  */
 function statistics_node_view($node, $view_mode) {
   $config = config('statistics.settings');
+  $count_node_types = $config->get('count_node_types');
+
   // Attach Ajax node count statistics if configured.
-  if ($config->get('count_content_views') && $config->get('count_content_views_ajax')) {
+  if ($config->get('count_content_views') && $config->get('count_content_views_ajax') && in_array($node->type, $count_node_types)) {
     if (!empty($node->nid) && $view_mode == 'full' && node_is_page($node) && empty($node->in_preview)) {
       $statistics = backdrop_get_path('module', 'statistics') . '/statistics.js';
       $node->content['#attached']['js'][$statistics] = array(

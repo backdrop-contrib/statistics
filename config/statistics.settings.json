@@ -8,5 +8,6 @@
     "block_top_day_num": 0,
     "block_top_all_num": 0,
     "block_top_last_num": 0,
-    "cron_views_scale": 0
+    "cron_views_scale": 0,
+    "count_node_types": []
 }
