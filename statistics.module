@@ -30,10 +30,16 @@ function statistics_exit() {
       db_merge('node_counter')
         ->key(array('nid' => arg(1)))
         ->fields(array(
+          'yearcount' => 1,
+          'monthcount' => 1,
+          'weekcount' => 1,
           'daycount' => 1,
           'totalcount' => 1,
           'timestamp' => REQUEST_TIME,
         ))
+        ->expression('yearcount', 'yearcount + 1')
+        ->expression('monthcount', 'monthcount + 1')
+        ->expression('weekcount', 'weekcount + 1')
         ->expression('daycount', 'daycount + 1')
         ->expression('totalcount', 'totalcount + 1')
         ->execute();
@@ -216,16 +222,25 @@ function statistics_user_delete($account) {
  */
 function statistics_cron() {
   $config = config('statistics.settings');
-  $statistics_timestamp = $config->get('day_timestamp');
+  $timestamps = array(
+    'year' => 86400*365,
+    'month' => 86400*30,
+    'week' => 86400*7,
+    'day' => 86400,
+  );
 
-  if ((REQUEST_TIME - $statistics_timestamp) >= 86400) {
-    // Reset day counts.
-    db_update('node_counter')
-      ->fields(array('daycount' => 0))
-      ->execute();
-    $config->set('day_timestamp', REQUEST_TIME);
-    $config->save();
+  foreach ($timestamps as $timestamp => $interval) {
+    $stamp = $timestamp . '_timestamp';
+    $statistics_timestamp = $config->get($stamp);
+    if ((REQUEST_TIME - $statistics_timestamp) >= $interval) {
+      // Reset day counts.
+      db_update('node_counter')
+        ->fields(array($timestamp . 'count' => 0))
+        ->execute();
+      $config->set($stamp, REQUEST_TIME);
+    }
   }
+  $config->save();
 
   // Clean up expired access logs (if applicable).
   if ($config->get('flush_accesslog_timer') > 0) {
@@ -236,12 +251,18 @@ function statistics_cron() {
 }
 
 /**
- * Returns the most viewed content of all time, today, or the last-viewed node.
+ * Returns the most viewed content of all time, various time periods, or the 
+ * last-viewed node.
  *
  * @param $dbfield
  *   The database field to use, one of:
  *   - 'totalcount': Integer that shows the top viewed content of all time.
  *   - 'daycount': Integer that shows the top viewed content for today.
+ *   - 'weekcount': Integer that shows the top viewed content for the week.
+ *   - 'monthcount': Integer that shows the top viewed content for the last 30 
+ *     days.
+ *   - 'dayearcount': Integer that shows the top viewed content for the last 
+ *     365 days.
  *   - 'timestamp': Integer that shows only the last viewed node.
  * @param $dbrows
  *   The number of rows to be returned.
@@ -252,7 +273,7 @@ function statistics_cron() {
  *   be executed correctly.
  */
 function statistics_title_list($dbfield, $dbrows) {
-  if (in_array($dbfield, array('totalcount', 'daycount', 'timestamp'))) {
+  if (in_array($dbfield, array('totalcount', 'daycount', 'weekcount', 'monthcount', 'yearcount', 'timestamp'))) {
     $query = db_select('node', 'n');
     $query->addTag('node_access');
     $query->join('node_counter', 's', 'n.nid = s.nid');
@@ -281,15 +302,16 @@ function statistics_title_list($dbfield, $dbrows) {
  *   An associative array containing:
  *   - totalcount: Integer for the total number of times the node has been
  *     viewed.
- *   - daycount: Integer for the total number of times the node has been viewed
+ *   - daycount, weekcount, monthcount, yearcount: Integers for the total 
+ *     number of times the node has been viewed for time intervals.
  *     "today". For the daycount to be reset, cron must be enabled.
  *   - timestamp: Integer for the timestamp of when the node was last viewed.
  */
 function statistics_get($nid) {
 
   if ($nid > 0) {
-    // Retrieve an array with both totalcount and daycount.
-    return db_query('SELECT totalcount, daycount, timestamp FROM {node_counter} WHERE nid = :nid', array(':nid' => $nid), array('target' => 'slave'))->fetchAssoc();
+    // Retrieve an array with both totalcount and time interval counts.
+    return db_query('SELECT totalcount, daycount, weekcount, monthcount, yearcount, timestamp FROM {node_counter} WHERE nid = :nid', array(':nid' => $nid), array('target' => 'slave'))->fetchAssoc();
   }
 }
 
@@ -314,6 +336,9 @@ function statistics_block_configure($delta = '') {
   // Popular content block settings
   $numbers = array('0' => t('Disabled')) + backdrop_map_assoc(array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40));
   $form['block_top_day_num'] = array('#type' => 'select', '#title' => t("Number of day's top views to display"), '#default_value' => $config->get('block_top_day_num'), '#options' => $numbers, '#description' => t('How many content items to display in "day" list.'));
+  $form['block_top_week_num'] = array('#type' => 'select', '#title' => t("Number of day's top views to display"), '#default_value' => $config->get('block_top_week_num'), '#options' => $numbers, '#description' => t('How many content items to display in "day" list.'));
+  $form['block_top_month_num'] = array('#type' => 'select', '#title' => t("Number of day's top views to display"), '#default_value' => $config->get('block_top_month_num'), '#options' => $numbers, '#description' => t('How many content items to display in "day" list.'));
+  $form['block_top_year_num'] = array('#type' => 'select', '#title' => t("Number of day's top views to display"), '#default_value' => $config->get('block_top_year_num'), '#options' => $numbers, '#description' => t('How many content items to display in "day" list.'));
   $form['block_top_all_num'] = array('#type' => 'select', '#title' => t('Number of all time views to display'), '#default_value' => $config->get('block_top_all_num'), '#options' => $numbers, '#description' => t('How many content items to display in "all time" list.'));
   $form['block_top_last_num'] = array('#type' => 'select', '#title' => t('Number of most recent views to display'), '#default_value' => $config->get('block_top_last_num'), '#options' => $numbers, '#description' => t('How many content items to display in "recently viewed" list.'));
   return $form;
@@ -340,6 +365,24 @@ function statistics_block_view($delta = '') {
 
     $daytop = $config->get('block_top_day_num');
     if ($daytop && ($result = statistics_title_list('daycount', $daytop)) && ($node_title_list = node_title_list($result, t("Today's:")))) {
+      $content['top_day'] = $node_title_list;
+      $content['top_day']['#suffix'] = '<br />';
+    }
+
+    $daytop = $config->get('block_top_week_num');
+    if ($daytop && ($result = statistics_title_list('weekcount', $daytop)) && ($node_title_list = node_title_list($result, t("This week:")))) {
+      $content['top_day'] = $node_title_list;
+      $content['top_day']['#suffix'] = '<br />';
+    }
+
+    $daytop = $config->get('block_top_month_num');
+    if ($daytop && ($result = statistics_title_list('monthcount', $daytop)) && ($node_title_list = node_title_list($result, t("This month:")))) {
+      $content['top_day'] = $node_title_list;
+      $content['top_day']['#suffix'] = '<br />';
+    }
+
+    $daytop = $config->get('block_top_year_num');
+    if ($daytop && ($result = statistics_title_list('yearcount', $daytop)) && ($node_title_list = node_title_list($result, t("This year:")))) {
       $content['top_day'] = $node_title_list;
       $content['top_day']['#suffix'] = '<br />';
     }
