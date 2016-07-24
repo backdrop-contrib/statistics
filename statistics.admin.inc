@@ -335,6 +335,20 @@ function statistics_settings_form() {
     ),
   );
 
+  // Add user role access selection.
+  $form['content']['node_count_excluded_roles'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Exclude roles'),
+    '#options' => array_map('check_plain', user_roles()),
+    '#default_value' => $config->get('node_count_excluded_roles'),
+    '#description' => t('Page views will not be counted for selected roles. If the administrator role is selected, user 1 will not be tracked.'),
+    '#states' => array(
+      'visible' => array(
+        ':input[name="count_content_views"]' => array('checked' => TRUE),
+      ),
+    ),
+  );
+
   $form['actions']['#type'] = 'actions';
   $form['actions']['submit'] = array(
     '#type' => 'submit',
@@ -351,6 +365,7 @@ function statistics_settings_form_submit($form, &$form_state) {
   $config->set('count_content_views', $form_state['values']['count_content_views']);
   $config->set('count_content_views_ajax', $form_state['values']['count_content_views_ajax']);
   $config->set('count_node_types', array_filter($form_state['values']['count_node_types']));
+  $config->set('node_count_excluded_roles', array_filter($form_state['values']['node_count_excluded_roles']));
   $config->save();
   backdrop_set_message(t('The configuration options have been saved.'));
 }

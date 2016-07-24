@@ -9,5 +9,8 @@
     "block_top_all_num": 0,
     "block_top_last_num": 0,
     "cron_views_scale": 0,
-    "count_node_types": []
+    "count_node_types": [],
+    "node_count_excluded_roles": {
+        "administrator": "administrator"
+    }
 }
