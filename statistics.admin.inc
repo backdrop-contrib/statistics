@@ -120,10 +120,8 @@ function statistics_top_visitors() {
     array('data' => t('Hits'), 'field' => 'hits', 'sort' => 'desc'),
     array('data' => t('Visitor'), 'field' => 'u.name'),
     array('data' => t('Total page generation time'), 'field' => 'total'),
-    array('data' => user_access('block IP addresses') ? t('Operations') : '', 'colspan' => 2),
   );
   $query = db_select('accesslog', 'a', array('target' => 'slave'))->extend('PagerDefault')->extend('TableSort');
-  $query->leftJoin('blocked_ips', 'bl', 'a.hostname = bl.ip');
   $query->leftJoin('users', 'u', 'a.uid = u.uid');
 
   $query->addExpression('COUNT(a.uid)', 'hits');
@@ -131,11 +129,9 @@ function statistics_top_visitors() {
   $query
     ->fields('a', array('uid', 'hostname'))
     ->fields('u', array('name'))
-    ->fields('bl', array('iid'))
     ->groupBy('a.hostname')
     ->groupBy('a.uid')
     ->groupBy('u.name')
-    ->groupBy('bl.iid')
     ->limit(30)
     ->orderByHeader($header)
     ->orderBy('a.hostname');
@@ -150,8 +146,11 @@ function statistics_top_visitors() {
   $rows = array();
   $destination = backdrop_get_destination();
   foreach ($result as $account) {
-    $ban_link = $account->iid ? l(t('unblock IP address'), "admin/config/people/ip-blocking/delete/$account->iid", array('query' => $destination)) : l(t('block IP address'), "admin/config/people/ip-blocking/$account->hostname", array('query' => $destination));
-    $rows[] = array($account->hits, ($account->uid ? theme('username', array('account' => $account)) : $account->hostname), format_interval(round($account->total / 1000)), (user_access('block IP addresses') && !$account->uid) ? $ban_link : '');
+    $rows[] = array(
+      $account->hits, 
+      ($account->uid ? theme('username', array('account' => $account)) : $account->hostname), 
+      format_interval(round($account->total / 1000)), 
+    );
   }
 
   backdrop_set_title(t('Top visitors in the past %interval', array('%interval' => format_interval(config_get('statistics.settings', 'flush_accesslog_timer')))), PASS_THROUGH);
