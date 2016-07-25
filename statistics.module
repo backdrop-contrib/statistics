@@ -508,8 +508,6 @@ function statistics_node_count_excluded_role() {
   return $excluded;
 }
 
-
-
 /**
  * Implements hook_config_info().
  */
@@ -519,4 +517,24 @@ function statistics_config_info() {
     'group' => t('Configuration'),
   );
   return $prefixes;
+}
+
+function statistics_views_api() {
+  return array(
+    'api' => 3,
+    'path' => backdrop_get_path('module', 'statistics') . '/views',
+  );
+}
+
+/**
+ * Implements hook_autoload_info().
+ */
+function statistics_autoload_info() {
+  return array(
+    'statistics_views_handler_field_daycount_numeric' => 'views/statistics_views_handler_field_daycount_numeric.inc',
+    'statistics_views_handler_field_weekcount_numeric' => 'views/statistics_views_handler_field_weekcount_numeric.inc',
+    'statistics_views_handler_field_monthcount_numeric' => 'views/statistics_views_handler_field_monthcount_numeric.inc',
+    'statistics_views_handler_field_yearcount_numeric' => 'views/statistics_views_handler_field_yearcount_numeric.inc',
+    'statistics_views_handler_field_totalcount_numeric' => 'views/statistics_views_handler_field_totalcount_numeric.inc',
+  );
 }
