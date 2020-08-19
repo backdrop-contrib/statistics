@@ -12,7 +12,7 @@ To enable collection of statistics, the Enable access log checkbox on the
 Statistics settings page must be checked. This access log is used to store 
 data about every page accessed, such as the remote host's IP address, where 
 they came from (referrer), what node they've viewed, and their user name. 
-Enabling the log adds one database call per page displayed by Drupal.
+Enabling the log adds one database call per page displayed by Backdrop.
 
 The Discard access logs older than setting on the settings page specifies the 
 length of time entries are kept in the log before they are deleted. This 

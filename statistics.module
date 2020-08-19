@@ -536,5 +536,8 @@ function statistics_autoload_info() {
     'statistics_views_handler_field_monthcount_numeric' => 'views/statistics_views_handler_field_monthcount_numeric.inc',
     'statistics_views_handler_field_yearcount_numeric' => 'views/statistics_views_handler_field_yearcount_numeric.inc',
     'statistics_views_handler_field_totalcount_numeric' => 'views/statistics_views_handler_field_totalcount_numeric.inc',
+    'statistics_views_handler_field_accesslog_path' => 'views/statistics_views_handler_field_accesslog_path.inc',
+    'statistics_views_handler_field_node_counter_timestamp' => 'views/statistics_views_handler_field_node_counter_timestamp.inc',
+    'statistics_views_handler_field_numeric' => 'views/statistics_views_handler_field_numeric.inc',
   );
 }
