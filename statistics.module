@@ -46,8 +46,6 @@ function statistics_exit() {
     }
   }
   if ($config->get('enable_access_log')) {
-    backdrop_bootstrap(BACKDROP_BOOTSTRAP_SESSION);
-
     // For anonymous users unicode.inc will not have been loaded.
     include_once BACKDROP_ROOT . '/core/includes/unicode.inc';
     // Log this page access.
