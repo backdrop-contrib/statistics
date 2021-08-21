@@ -219,7 +219,6 @@ function statistics_user_delete($account) {
  * Implements hook_cron().
  */
 function statistics_cron() {
-  $config = config('statistics.settings');
   $timestamps = array(
     'year' => 86400*365,
     'month' => 86400*30,
@@ -228,19 +227,19 @@ function statistics_cron() {
   );
 
   foreach ($timestamps as $timestamp => $interval) {
-    $stamp = $timestamp . '_timestamp';
-    $statistics_timestamp = $config->get($stamp);
+    $stamp = 'statistics_' . $timestamp . '_timestamp';
+    $statistics_timestamp = state_get($stamp);
     if ((REQUEST_TIME - $statistics_timestamp) >= $interval) {
       // Reset day counts.
       db_update('node_counter')
         ->fields(array($timestamp . 'count' => 0))
         ->execute();
-      $config->set($stamp, REQUEST_TIME);
+      state_set($stamp, REQUEST_TIME);
     }
   }
-  $config->save();
 
   // Clean up expired access logs (if applicable).
+  $config = config('statistics.settings');
   if ($config->get('flush_accesslog_timer') > 0) {
     db_delete('accesslog')
       ->condition('timestamp', REQUEST_TIME - $config->get('flush_accesslog_timer'), '<')
@@ -249,7 +248,7 @@ function statistics_cron() {
 }
 
 /**
- * Returns the most viewed content of all time, various time periods, or the 
+ * Returns the most viewed content of all time, various time periods, or the
  * last-viewed node.
  *
  * @param $dbfield
@@ -257,9 +256,9 @@ function statistics_cron() {
  *   - 'totalcount': Integer that shows the top viewed content of all time.
  *   - 'daycount': Integer that shows the top viewed content for today.
  *   - 'weekcount': Integer that shows the top viewed content for the week.
- *   - 'monthcount': Integer that shows the top viewed content for the last 30 
+ *   - 'monthcount': Integer that shows the top viewed content for the last 30
  *     days.
- *   - 'dayearcount': Integer that shows the top viewed content for the last 
+ *   - 'dayearcount': Integer that shows the top viewed content for the last
  *     365 days.
  *   - 'timestamp': Integer that shows only the last viewed node.
  * @param $dbrows
@@ -300,7 +299,7 @@ function statistics_title_list($dbfield, $dbrows) {
  *   An associative array containing:
  *   - totalcount: Integer for the total number of times the node has been
  *     viewed.
- *   - daycount, weekcount, monthcount, yearcount: Integers for the total 
+ *   - daycount, weekcount, monthcount, yearcount: Integers for the total
  *     number of times the node has been viewed for time intervals.
  *     "today". For the daycount to be reset, cron must be enabled.
  *   - timestamp: Integer for the timestamp of when the node was last viewed.
@@ -467,7 +466,7 @@ function statistics_ranking() {
         ),
         // Inverse law that maps the highest view count on the site to 1 and 0 to 0.
         'score' => '2.0 - 2.0 / (1.0 + node_counter.totalcount * CAST(:scale AS DECIMAL))',
-        'arguments' => array(':scale' => $config->get('node_cron_views_scale')),
+        'arguments' => array(':scale' => state_get('statistics_cron_views_scale')),
       ),
     );
   }
@@ -477,7 +476,7 @@ function statistics_ranking() {
  * Implements hook_update_index().
  */
 function statistics_update_index() {
-  config_set('statistics.settings', 'node_cron_views_scale', 1.0 / max(1, db_query('SELECT MAX(totalcount) FROM {node_counter}')->fetchField()));
+  state_set('statistics_cron_views_scale', 1.0 / max(1, db_query('SELECT MAX(totalcount) FROM {node_counter}')->fetchField()));
 }
 
 

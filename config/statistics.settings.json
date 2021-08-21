@@ -4,17 +4,12 @@
     "count_content_views_ajax": 0,
     "enable_access_log": 0,
     "flush_accesslog_timer": 259200,
-    "day_timestamp": "",
-    "week_timestamp": "",
-    "month_timestamp": "",
-    "year_timestamp": "",
     "block_top_day_num": 0,
     "block_top_week_num": 0,
     "block_top_month_num": 0,
     "block_top_year_num": 0,
     "block_top_all_num": 0,
     "block_top_last_num": 0,
-    "cron_views_scale": 0,
     "count_node_types": [],
     "node_count_excluded_roles": {
         "administrator": "administrator"

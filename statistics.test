@@ -427,8 +427,9 @@ class StatisticsAdminTestCase extends BackdropWebTestCase {
   function testExpiredLogs() {
     config_set('statistics.settings', 'enable_access_log', 1);
     config_set('statistics.settings', 'count_content_views', 1);
-    config_set('statistics.settings', 'day_timestamp', 8640000);
     config_set('statistics.settings', 'flush_accesslog_timer', 1);
+
+    state_set('statistics_day_timestamp', 8640000);
 
     $this->backdropGet('node/' . $this->test_node->nid);
     $this->backdropGet('node/' . $this->test_node->nid);

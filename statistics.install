@@ -174,3 +174,27 @@ function statistics_update_1000() {
 function statistics_update_last_removed() {
   return 7000;
 }
+
+/**
+ * Move some regularly changing config variables to state.
+ */
+function statistics_update_1002() {
+  $config = config('statistics.settings');
+
+  state_set('statistics_cron_views_scale', $config->get('cron_views_scale'));
+  $config->clear('cron_views_scale');
+
+  state_set('statistics_day_timestamp', $config->get('day_timestamp'));
+  $config->clear('day_timestamp');
+
+  state_set('statistics_week_timestamp', $config->get('week_timestamp'));
+  $config->clear('week_timestamp');
+
+  state_set('statistics_month_timestamp', $config->get('month_timestamp'));
+  $config->clear('month_timestamp');
+
+  state_set('statistics_year_timestamp', $config->get('year_timestamp'));
+  $config->clear('year_timestamp');
+
+  $config->save();
+}
