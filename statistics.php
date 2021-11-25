@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Handles counts of node views via Ajax with minimal bootstrap.
@@ -8,7 +7,7 @@
 /**
 * Root directory of Backdrop installation.
 */
-define('BACKDROP_ROOT', substr($_SERVER['SCRIPT_FILENAME'], 0, strpos($_SERVER['SCRIPT_FILENAME'], '/modules/statistics/statistics.php')));
+define('BACKDROP_ROOT', substr($_SERVER['SCRIPT_FILENAME'], 0, strpos($_SERVER['SCRIPT_FILENAME'], '/modules/contrib/statistics/statistics.php')));
 // Change the directory to the Backdrop root.
 chdir(BACKDROP_ROOT);
 
