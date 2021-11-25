@@ -7,7 +7,7 @@
 /**
 * Root directory of Backdrop installation.
 */
-define('BACKDROP_ROOT', substr($_SERVER['SCRIPT_FILENAME'], 0, strpos($_SERVER['SCRIPT_FILENAME'], '/modules/contrib/statistics/statistics.php')));
+define('BACKDROP_ROOT', substr($_SERVER['SCRIPT_FILENAME'], 0, strrpos($_SERVER['SCRIPT_FILENAME'], '/modules/')));
 // Change the directory to the Backdrop root.
 chdir(BACKDROP_ROOT);
 
