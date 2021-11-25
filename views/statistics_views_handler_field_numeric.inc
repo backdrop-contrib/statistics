@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of views_handler_field_statistics_numeric.
+ * Definition of statistics_views_handler_field_numeric.
  */
 
 /**
@@ -10,7 +10,7 @@
  *
  * @ingroup views_field_handlers
  */
-class views_handler_field_statistics_numeric extends views_handler_field_numeric {
+class statistics_views_handler_field_numeric extends views_handler_field_numeric {
 
   /**
    * {@inheritdoc}
