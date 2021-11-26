@@ -249,7 +249,7 @@ function statistics_cron() {
 }
 
 /**
- * Returns the most viewed content of all time, various time periods, or the 
+ * Returns the most viewed content of all time, various time periods, or the
  * last-viewed node.
  *
  * @param $dbfield
@@ -257,9 +257,9 @@ function statistics_cron() {
  *   - 'totalcount': Integer that shows the top viewed content of all time.
  *   - 'daycount': Integer that shows the top viewed content for today.
  *   - 'weekcount': Integer that shows the top viewed content for the week.
- *   - 'monthcount': Integer that shows the top viewed content for the last 30 
+ *   - 'monthcount': Integer that shows the top viewed content for the last 30
  *     days.
- *   - 'dayearcount': Integer that shows the top viewed content for the last 
+ *   - 'yearcount': Integer that shows the top viewed content for the last
  *     365 days.
  *   - 'timestamp': Integer that shows only the last viewed node.
  * @param $dbrows
@@ -300,7 +300,7 @@ function statistics_title_list($dbfield, $dbrows) {
  *   An associative array containing:
  *   - totalcount: Integer for the total number of times the node has been
  *     viewed.
- *   - daycount, weekcount, monthcount, yearcount: Integers for the total 
+ *   - daycount, weekcount, monthcount, yearcount: Integers for the total
  *     number of times the node has been viewed for time intervals.
  *     "today". For the daycount to be reset, cron must be enabled.
  *   - timestamp: Integer for the timestamp of when the node was last viewed.
