@@ -51,7 +51,7 @@ class statistics_views_handler_field_yearcount_numeric extends views_handler_fie
   function render($values) {
     $value = $this->get_value($values);
     $value = statistics_get($value);
-    $value = number_format($value['yearcount'], 0, '', $this->options['separator']);
+    $value = $value ? number_format($value['yearcount'], 0, '', $this->options['separator']) : 0;
 
     // Check to see if hiding should happen before adding prefix and suffix.
     if ($this->options['hide_empty'] && empty($value) && ($value !== 0)) {
