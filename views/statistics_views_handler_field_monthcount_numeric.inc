@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of statistics_views_handler_field_numeric.
+ * Definition of statistics_views_handler_field_monthcount_numeric.
  */
 
 class statistics_views_handler_field_monthcount_numeric extends views_handler_field_numeric {
