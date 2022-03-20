@@ -52,7 +52,7 @@ function statistics_exit() {
     db_insert('accesslog')
       ->fields(array(
         'title' => truncate_utf8(strip_tags(backdrop_get_title()), 255),
-        'path' => truncate_utf8($_GET['q'], 255),
+        'path' => truncate_utf8(_statistics_clean_utf8($_GET['q']), 255),
         'url' => isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '',
         'hostname' => ip_address(),
         'uid' => $user->uid,
@@ -578,4 +578,15 @@ function statistics_autoload_info() {
     'statistics_views_handler_field_node_counter_timestamp' => 'views/statistics_views_handler_field_node_counter_timestamp.inc',
     'statistics_views_handler_field_numeric' => 'views/statistics_views_handler_field_numeric.inc',
   );
+}
+
+/**
+ * Clean a path that might be invalid UTF-8.
+ */
+function _statistics_clean_utf8($path) {
+  if (backdrop_validate_utf8($path)) {
+    return $path;
+  }
+  // Oh nos! Invalid UTF-8. Now we fix it.
+  return backdrop_convert_to_utf8($path, 'CP1252');
 }
