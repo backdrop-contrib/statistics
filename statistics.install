@@ -116,7 +116,7 @@ function statistics_schema() {
         'size' => 'medium',
       ),
       'monthcount' => array(
-        'description' => 'The total number of times the {node} has been viewed today.',
+        'description' => 'The total number of times the {node} has been viewed in the past month.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
@@ -124,7 +124,7 @@ function statistics_schema() {
         'size' => 'medium',
       ),
       'yearcount' => array(
-        'description' => 'The total number of times the {node} has been viewed today.',
+        'description' => 'The total number of times the {node} has been viewed in the past year.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
@@ -146,7 +146,14 @@ function statistics_schema() {
 }
 
 /**
- * Update
+ * Return the last update function that is no longer available.
+ */
+function statistics_update_last_removed() {
+  return 7000;
+}
+
+/**
+ * Migrate statistics variables to config.
  */
 function statistics_update_1000() {
   $config = config('statistics.settings');
@@ -171,8 +178,43 @@ function statistics_update_1000() {
   update_variable_del('statistics_block_top_last_num');
 }
 
-function statistics_update_last_removed() {
-  return 7000;
+/**
+ * Add database columns if we are migrating from Drupal 7.
+ */
+function statistics_update_1001() {
+  // Adding this as a separate update function in case a user previously updated
+  // from Drupal 7 and so already ran update_1000. So when this update runs, the
+  // db may or may not have the extra tables added for the Backdrop version.
+  if (!db_field_exists('node_counter', 'weekcount')) {
+    db_add_field('node_counter', 'weekcount', array(
+      'description' => 'The total number of times the {node} has been viewed today.',
+      'type' => 'int',
+      'unsigned' => TRUE,
+      'not null' => TRUE,
+      'default' => 0,
+      'size' => 'medium',
+    ));
+  }
+  if (!db_field_exists('node_counter', 'monthcount')) {
+    db_add_field('node_counter', 'monthcount', array(
+      'description' => 'The total number of times the {node} has been viewed  in the past month.',
+      'type' => 'int',
+      'unsigned' => TRUE,
+      'not null' => TRUE,
+      'default' => 0,
+      'size' => 'medium',
+    ));
+  }
+  if (!db_field_exists('node_counter', 'yearcount')) {
+    db_add_field('node_counter', 'yearcount', array(
+      'description' => 'The total number of times the {node} has been viewed in the past year.',
+      'type' => 'int',
+      'unsigned' => TRUE,
+      'not null' => TRUE,
+      'default' => 0,
+      'size' => 'medium',
+    ));
+  }
 }
 
 /**

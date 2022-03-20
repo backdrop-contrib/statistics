@@ -52,7 +52,7 @@ function statistics_exit() {
     db_insert('accesslog')
       ->fields(array(
         'title' => truncate_utf8(strip_tags(backdrop_get_title()), 255),
-        'path' => truncate_utf8($_GET['q'], 255),
+        'path' => truncate_utf8(_statistics_clean_utf8($_GET['q']), 255),
         'url' => isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '',
         'hostname' => ip_address(),
         'uid' => $user->uid,
@@ -258,7 +258,7 @@ function statistics_cron() {
  *   - 'weekcount': Integer that shows the top viewed content for the week.
  *   - 'monthcount': Integer that shows the top viewed content for the last 30
  *     days.
- *   - 'dayearcount': Integer that shows the top viewed content for the last
+ *   - 'yearcount': Integer that shows the top viewed content for the last
  *     365 days.
  *   - 'timestamp': Integer that shows only the last viewed node.
  * @param $dbrows
@@ -332,12 +332,49 @@ function statistics_block_configure($delta = '') {
   $config = config('statistics.settings');
   // Popular content block settings
   $numbers = array('0' => t('Disabled')) + backdrop_map_assoc(array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40));
-  $form['block_top_day_num'] = array('#type' => 'select', '#title' => t("Number of day's top views to display"), '#default_value' => $config->get('block_top_day_num'), '#options' => $numbers, '#description' => t('How many content items to display in "day" list.'));
-  $form['block_top_week_num'] = array('#type' => 'select', '#title' => t("Number of day's top views to display"), '#default_value' => $config->get('block_top_week_num'), '#options' => $numbers, '#description' => t('How many content items to display in "day" list.'));
-  $form['block_top_month_num'] = array('#type' => 'select', '#title' => t("Number of day's top views to display"), '#default_value' => $config->get('block_top_month_num'), '#options' => $numbers, '#description' => t('How many content items to display in "day" list.'));
-  $form['block_top_year_num'] = array('#type' => 'select', '#title' => t("Number of day's top views to display"), '#default_value' => $config->get('block_top_year_num'), '#options' => $numbers, '#description' => t('How many content items to display in "day" list.'));
-  $form['block_top_all_num'] = array('#type' => 'select', '#title' => t('Number of all time views to display'), '#default_value' => $config->get('block_top_all_num'), '#options' => $numbers, '#description' => t('How many content items to display in "all time" list.'));
-  $form['block_top_last_num'] = array('#type' => 'select', '#title' => t('Number of most recent views to display'), '#default_value' => $config->get('block_top_last_num'), '#options' => $numbers, '#description' => t('How many content items to display in "recently viewed" list.'));
+  $form['block_top_day_num'] = array(
+    '#type' => 'select',
+    '#title' => t("Number of day's top views to display"),
+    '#default_value' => $config->get('block_top_day_num'),
+    '#options' => $numbers,
+    '#description' => t('How many content items to display in "day" list.'),
+  );
+  $form['block_top_week_num'] = array(
+    '#type' => 'select',
+    '#title' => t("Number of week's top views to display"),
+    '#default_value' => $config->get('block_top_week_num'),
+    '#options' => $numbers,
+    '#description' => t('How many content items to display in "week" list.'),
+  );
+  $form['block_top_month_num'] = array(
+    '#type' => 'select',
+    '#title' => t("Number of month's top views to display"),
+    '#default_value' => $config->get('block_top_month_num'),
+    '#options' => $numbers,
+    '#description' => t('How many content items to display in "month" list.'),
+  );
+  $form['block_top_year_num'] = array(
+    '#type' => 'select',
+    '#title' => t("Number of year's top views to display"),
+    '#default_value' => $config->get('block_top_year_num'),
+    '#options' => $numbers,
+    '#description' => t('How many content items to display in "year" list.'),
+  );
+  $form['block_top_all_num'] = array(
+    '#type' => 'select',
+    '#title' => t('Number of all time views to display'),
+    '#default_value' => $config->get('block_top_all_num'),
+    '#options' => $numbers,
+    '#description' => t('How many content items to display in "all time" list.'),
+  );
+  $form['block_top_last_num'] = array(
+    '#type' => 'select',
+    '#title' => t('Number of most recent views to display'),
+    '#default_value' => $config->get('block_top_last_num'),
+    '#options' => $numbers,
+    '#description' => t('How many content items to display in "recently viewed" list.'),
+  );
+
   return $form;
 }
 
@@ -347,6 +384,9 @@ function statistics_block_configure($delta = '') {
 function statistics_block_save($delta = '', $edit = array()) {
   $config = config('statistics.settings');
   $config->set('block_top_day_num', $edit['block_top_day_num']);
+  $config->set('block_top_week_num', $edit['block_top_week_num']);
+  $config->set('block_top_month_num', $edit['block_top_month_num']);
+  $config->set('block_top_year_num', $edit['block_top_year_num']);
   $config->set('block_top_all_num', $edit['block_top_all_num']);
   $config->set('block_top_last_num', $edit['block_top_last_num']);
   $config->save();
@@ -366,22 +406,22 @@ function statistics_block_view($delta = '') {
       $content['top_day']['#suffix'] = '<br />';
     }
 
-    $daytop = $config->get('block_top_week_num');
-    if ($daytop && ($result = statistics_title_list('weekcount', $daytop)) && ($node_title_list = node_title_list($result, t("This week:")))) {
-      $content['top_day'] = $node_title_list;
-      $content['top_day']['#suffix'] = '<br />';
+    $weektop = $config->get('block_top_week_num');
+    if ($weektop && ($result = statistics_title_list('weekcount', $weektop)) && ($node_title_list = node_title_list($result, t("This week:")))) {
+      $content['top_week'] = $node_title_list;
+      $content['top_week']['#suffix'] = '<br />';
     }
 
-    $daytop = $config->get('block_top_month_num');
-    if ($daytop && ($result = statistics_title_list('monthcount', $daytop)) && ($node_title_list = node_title_list($result, t("This month:")))) {
-      $content['top_day'] = $node_title_list;
-      $content['top_day']['#suffix'] = '<br />';
+    $monthtop = $config->get('block_top_month_num');
+    if ($monthtop && ($result = statistics_title_list('monthcount', $monthtop)) && ($node_title_list = node_title_list($result, t("This month:")))) {
+      $content['top_month'] = $node_title_list;
+      $content['top_month']['#suffix'] = '<br />';
     }
 
-    $daytop = $config->get('block_top_year_num');
-    if ($daytop && ($result = statistics_title_list('yearcount', $daytop)) && ($node_title_list = node_title_list($result, t("This year:")))) {
-      $content['top_day'] = $node_title_list;
-      $content['top_day']['#suffix'] = '<br />';
+    $yeartop = $config->get('block_top_year_num');
+    if ($yeartop && ($result = statistics_title_list('yearcount', $yeartop)) && ($node_title_list = node_title_list($result, t("This year:")))) {
+      $content['top_year'] = $node_title_list;
+      $content['top_year']['#suffix'] = '<br />';
     }
 
     $alltimetop = $config->get('block_top_all_num');
@@ -537,4 +577,15 @@ function statistics_autoload_info() {
     'statistics_views_handler_field_node_counter_timestamp' => 'views/statistics_views_handler_field_node_counter_timestamp.inc',
     'statistics_views_handler_field_numeric' => 'views/statistics_views_handler_field_numeric.inc',
   );
+}
+
+/**
+ * Clean a path that might be invalid UTF-8.
+ */
+function _statistics_clean_utf8($path) {
+  if (backdrop_validate_utf8($path)) {
+    return $path;
+  }
+  // Oh nos! Invalid UTF-8. Now we fix it.
+  return backdrop_convert_to_utf8($path, 'CP1252');
 }
