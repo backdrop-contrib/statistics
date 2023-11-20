@@ -25,7 +25,7 @@ function statistics_exit() {
   if (arg(0) == 'node' && is_numeric(arg(1)) && arg(2) == NULL && !statistics_node_count_excluded_role()) {
     $node = menu_get_object();
     $count_node_types = $config->get('count_node_types');
-    if ($config->get('count_content_views') && in_array($node->type, $count_node_types) && !$config->get('count_content_views_ajax')) {
+    if ($config->get('count_content_views') && isset($node->type) && in_array($node->type, $count_node_types) && !$config->get('count_content_views_ajax')) {
       // A node has been viewed, so update the node's counters.
       db_merge('node_counter')
         ->key(array('nid' => arg(1)))
