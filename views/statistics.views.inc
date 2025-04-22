@@ -252,6 +252,25 @@ function statistics_views_data() {
     ),
   );
 
+  // User agent.
+  $data['accesslog']['user_agent'] = array(
+    'title' => t('User agent'),
+    'help' => t('User agent string with md5 hash for the requested page.'),
+    'field' => array(
+      'handler' => 'views_handler_field',
+      'click sortable' => TRUE,
+    ),
+    'filter' => array(
+      'handler' => 'views_handler_filter_string',
+    ),
+    'sort' => array(
+      'handler' => 'views_handler_sort',
+    ),
+    'argument' => array(
+      'handler' => 'views_handler_argument_string',
+    ),
+  );
+
   return $data;
 }
 
