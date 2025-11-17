@@ -14,21 +14,36 @@ function statistics_exit() {
   $config = config('statistics.settings');
   global $user;
 
-  // When serving cached pages with the 'page_cache_without_database'
-  // configuration, system variables need to be loaded. This is a major
-  // performance decrease for non-database page caches, but with Statistics
-  // module, it is likely to also have 'enable_access_log' enabled,
-  // in which case we need to bootstrap to the session phase anyway.
+  // 1. Bootstrap for variable loading.
   backdrop_bootstrap(BACKDROP_BOOTSTRAP_VARIABLES);
 
-  // We are counting content views.
-  if (arg(0) == 'node' && is_numeric(arg(1)) && arg(2) == NULL && !statistics_node_count_excluded_role()) {
-    $node = menu_get_object();
+  // 2. Efficient Single Exclusion Check (Guard Clause)
+  // If the statistics module is enabled AND the current user is an excluded role,
+  // we exit the function immediately to prevent any tracking.
+  // We use OR logic here because if EITHER count is enabled, we need the check.
+  if (($config->get('count_content_views') || $config->get('enable_access_log')) && statistics_node_count_excluded_role()) {
+    // Stop execution and prevent ALL tracking for this user.
+    return;
+  }
+
+  // --- If we reach this point, the user is NOT an excluded role, or tracking is disabled. ---
+
+  // 3. We are counting content views (Node-specific tracking).
+  // The role check is now removed from this block.
+  // We use the robust logic that covers the front page node view.
+  $node = menu_get_object('node');
+
+  if ($node && $config->get('count_content_views')) {
     $count_node_types = $config->get('count_node_types');
-    if ($config->get('count_content_views') && in_array($node->type, $count_node_types) && !$config->get('count_content_views_ajax')) {
+
+    // Check node type and AJAX setting (original module logic)
+    if (in_array($node->type, $count_node_types) && !$config->get('count_content_views_ajax')) {
+      // The original path check (arg(0) == 'node'...) is no longer needed
+      // because menu_get_object() is more robust.
+
       // A node has been viewed, so update the node's counters.
       db_merge('node_counter')
-        ->key(array('nid' => arg(1)))
+        ->key(array('nid' => $node->nid)) // Use $node->nid directly
         ->fields(array(
           'yearcount' => 1,
           'monthcount' => 1,
@@ -45,9 +60,13 @@ function statistics_exit() {
         ->execute();
     }
   }
+
+  // 4. Log the page access (General URL tracking).
+  // The role check is now removed from this block.
   if ($config->get('enable_access_log')) {
     // For anonymous users unicode.inc will not have been loaded.
     include_once BACKDROP_ROOT . '/core/includes/unicode.inc';
+
     // Log this page access.
     db_insert('accesslog')
       ->fields(array(
