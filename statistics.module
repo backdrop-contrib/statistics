@@ -30,7 +30,7 @@ function statistics_exit() {
 
   // 3. We are counting content views (Node-specific tracking).
   // The role check is now removed from this block.
-  // We use the robust logic that covers the front page node view.
+  // We use the robust logic that also covers the front page node view.
   $node = menu_get_object('node');
 
   if ($node && $config->get('count_content_views')) {
