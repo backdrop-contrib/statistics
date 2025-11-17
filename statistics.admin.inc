@@ -147,9 +147,9 @@ function statistics_top_visitors() {
   $destination = backdrop_get_destination();
   foreach ($result as $account) {
     $rows[] = array(
-      $account->hits, 
-      ($account->uid ? theme('username', array('account' => $account)) : $account->hostname), 
-      format_interval(round($account->total / 1000)), 
+      $account->hits,
+      ($account->uid ? theme('username', array('account' => $account)) : $account->hostname),
+      format_interval(round($account->total / 1000)),
     );
   }
 
@@ -289,8 +289,8 @@ function statistics_settings_form() {
     '#type' => 'select',
     '#title' => t('Discard access logs older than'),
     '#default_value' => $config->get('flush_accesslog_timer'),
-    '#options' => array(0 => t('Never')) + backdrop_map_assoc(array(3600, 10800, 21600, 32400, 43200, 86400, 172800, 259200, 604800, 1209600, 2419200, 4838400, 9676800), 'format_interval'),
-    '#description' => t('Older access log entries (including referrer statistics) will be automatically discarded. (Requires a correctly configured <a href="@cron">cron maintenance task</a>.)', array('@cron' => url('admin/reports/status'))),
+    '#options' => array(0 => t('Never')) + backdrop_map_assoc(array(10,3600, 10800, 21600, 32400, 43200, 86400, 172800, 259200, 604800, 1209600, 2419200, 4838400, 9676800), 'format_interval'),
+    '#description' => t('Older access log entries (including referrer statistics) will be automatically discarded. (Requires a correctly configured <a href="@cron">cron maintenance task</a>.) If set to "Never", access logs will be kept indefinitely. Use 10 seconds to remove access logs immediately, also used for testing.', array('@cron' => url('admin/reports/status'))),
   );
 
   // Content counter settings.
