@@ -78,6 +78,7 @@ function statistics_exit() {
         'sid' => session_id(),
         'timer' => (int) timer_read('page'),
         'timestamp' => REQUEST_TIME,
+        'user_agent' => substr($_SERVER['HTTP_USER_AGENT']??null, 0, 222) . ' ' . md5($_SERVER['HTTP_USER_AGENT']??null)
       ))
       ->execute();
   }

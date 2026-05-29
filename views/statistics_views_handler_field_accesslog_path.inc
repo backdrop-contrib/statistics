@@ -10,7 +10,7 @@
  *
  * @ingroup views_field_handlers
  */
-class views_handler_field_accesslog_path extends views_handler_field {
+class statistics_views_handler_field_accesslog_path extends views_handler_field {
 
   /**
    * Override init function to provide generic option to link to node.
