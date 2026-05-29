@@ -205,7 +205,7 @@ class StatisticsReportsTestCase extends StatisticsTestCase {
    * Verifies that 'Details' page renders properly and displays the added hit.
    */
   function testDetails() {
-    $this->backdropGet('admin/reports/access/1');
+    $this->backdropGet('admin/reports/statistics/hits/1');
     $this->assertText('test', 'Hit title found.');
     $this->assertText('node/1', 'Hit URL found.');
     $this->assertText('Anonymous', 'Hit user found.');

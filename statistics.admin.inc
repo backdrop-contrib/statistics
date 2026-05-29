@@ -16,6 +16,7 @@
  *   A render array containing information about the most recent hits.
  */
 function statistics_recent_hits() {
+  backdrop_add_library('system', 'backdrop.ajax');
   $header = array(
     array('data' => t('Timestamp'), 'field' => 'a.timestamp', 'sort' => 'desc'),
     array('data' => t('Page'), 'field' => 'a.path'),
@@ -34,11 +35,20 @@ function statistics_recent_hits() {
   $result = $query->execute();
   $rows = array();
   foreach ($result as $log) {
+    $options = array(
+      'attributes' => array(
+        'class' => array(
+          'use-ajax'),
+        'data-dialog' => 'true',
+        'data-dialog-options' => json_encode(array('width' => 700, 'dialogClass' => 'project-dialog')),
+      )
+    );
     $rows[] = array(
       array('data' => format_date($log->timestamp, 'short'), 'class' => array('nowrap')),
       _statistics_format_item($log->title, $log->path),
       theme('username', array('account' => $log)),
-      l(t('details'), "admin/reports/access/$log->aid"));
+      l(t('details'), "admin/reports/statistics/hits/$log->aid", $options)
+    );
   }
 
   $build['statistics_table'] = array(
