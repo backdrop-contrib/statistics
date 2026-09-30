@@ -1,8 +1,6 @@
 Statistics
 =====
 
-Fork of the Drupal core Statistics module.
-
 The Statistics module shows you how often pages and content are viewed, where
 visitors came from (referrer URL), and when. It is for recent activity and
 popular content on your site; for detailed visitor analytics, use a dedicated
@@ -14,6 +12,8 @@ significantly undercounted anonymous visitors, and search engines and other
 bots were counted as visitors. Version 1.2.0 records visits in the visitor's
 browser, which fixes both, and keeps a daily history. Run update.php after
 upgrading.
+
+Fork of the Drupal core Statistics module.
 
 How visits are recorded
 -----------------------
