@@ -127,7 +127,6 @@ function statistics_views_data() {
     ),
     'argument' => array(
       'handler' => 'views_handler_argument_numeric',
-      'name field' => 'wid',
       'numeric' => TRUE,
     ),
     'filter' => array(
@@ -141,7 +140,7 @@ function statistics_views_data() {
   // Session ID.
   $data['accesslog']['sid'] = array(
     'title' => t('Session ID'),
-    'help' => t('Browser session ID of user that visited page.'),
+    'help' => t('Hash of the browser session ID of the user that visited the page.'),
 
     'field' => array(
       'handler' => 'views_handler_field',

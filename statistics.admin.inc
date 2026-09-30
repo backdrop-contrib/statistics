@@ -158,7 +158,7 @@ function statistics_top_visitors() {
   foreach ($result as $account) {
     $rows[] = array(
       $account->hits,
-      ($account->uid ? theme('username', array('account' => $account)) : $account->hostname),
+      ($account->uid ? theme('username', array('account' => $account)) : check_plain($account->hostname)),
       format_interval(round($account->total / 1000)),
     );
   }

@@ -2,7 +2,20 @@
 
 ## 1.x-1.1.0 (unreleased)
 
-Run update.php after upgrading: update 1003 adds a database column.
+Run update.php after upgrading: update 1003 adds a database column, and
+update 1004 replaces stored session IDs with their hashes.
+
+### Security
+- The access log stored each visitor's live session ID, which is enough to
+  hijack that session for anyone who can read the log (a View exposing
+  "Session ID", a database backup). It now stores a SHA-256 hash, and
+  update 1004 hashes the existing rows.
+- The node "Pageviews" Views fields now respect the "View content hits"
+  permission, as the Content statistics fields already did. Views showing
+  them to other roles need that permission granted.
+- The Ajax counter only counts existing nodes of a counted content type.
+  Before, any number posted to statistics.php created a counter row.
+- Top visitors report escapes the hostname.
 
 ### Changed
 - Reports are grouped under Reports > Statistics as tabs
@@ -30,3 +43,6 @@ Run update.php after upgrading: update 1003 adds a database column.
 - Sites upgraded from Drupal 7 no longer fail before the settings form has
   been saved.
 - The referrer report escapes the host name in its LIKE condition.
+- Node statistics tokens no longer warn for nodes that have never been
+  viewed.
+- Views: removed a stray `name field` on the access ID argument.

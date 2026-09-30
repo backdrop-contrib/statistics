@@ -35,26 +35,24 @@ function statistics_tokens($type, $tokens, array $data = array(), array $options
   $url_options = array('absolute' => TRUE);
   $replacements = array();
 
-  if ($type == 'node' & !empty($data['node'])) {
+  if ($type == 'node' && !empty($data['node'])) {
     $node = $data['node'];
+    // statistics_get() returns FALSE for a node that has never been viewed.
+    $statistics = statistics_get($node->nid) ?: array('totalcount' => 0, 'daycount' => 0, 'timestamp' => 0);
 
     foreach ($tokens as $name => $original) {
       if ($name == 'total-count') {
-        $statistics = statistics_get($node->nid);
         $replacements[$original] = $statistics['totalcount'];
       }
       elseif ($name == 'day-count') {
-        $statistics = statistics_get($node->nid);
         $replacements[$original] = $statistics['daycount'];
       }
-      elseif ($name == 'last-view') {
-        $statistics = statistics_get($node->nid);
+      elseif ($name == 'last-view' && $statistics['timestamp']) {
         $replacements[$original] = format_date($statistics['timestamp']);
       }
     }
 
-    if ($created_tokens = token_find_with_prefix($tokens, 'last-view')) {
-      $statistics = statistics_get($node->nid);
+    if ($statistics['timestamp'] && ($created_tokens = token_find_with_prefix($tokens, 'last-view'))) {
       $replacements += token_generate('date', $created_tokens, array('date' => $statistics['timestamp']), $options);
     }
   }

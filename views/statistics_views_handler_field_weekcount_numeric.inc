@@ -5,7 +5,7 @@
  * Definition of statistics_views_handler_field_weekcount_numeric.
  */
 
-class statistics_views_handler_field_weekcount_numeric extends views_handler_field_numeric {
+class statistics_views_handler_field_weekcount_numeric extends statistics_views_handler_field_numeric {
   function option_definition() {
     $options = parent::option_definition();
 

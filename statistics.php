@@ -15,9 +15,12 @@ include_once BACKDROP_ROOT . '/core/includes/bootstrap.inc';
 backdrop_bootstrap(BACKDROP_BOOTSTRAP_VARIABLES);
 $config = config('statistics.settings');
 if ($config->get('count_content_views') && $config->get('count_content_views_ajax')) {
-  if (isset($_POST['nid'])) {
-    $nid = $_POST['nid'];
-    if (is_numeric($nid)) {
+  // Anyone can post here, so only count an existing node of a counted type:
+  // otherwise any integer adds a node_counter row.
+  $nid = isset($_POST['nid']) ? filter_var($_POST['nid'], FILTER_VALIDATE_INT, array('options' => array('min_range' => 1))) : FALSE;
+  if ($nid) {
+    $type = db_query('SELECT type FROM {node} WHERE nid = :nid', array(':nid' => $nid))->fetchField();
+    if ($type && in_array($type, (array) $config->get('count_node_types'))) {
       db_merge('node_counter')
         ->key(array('nid' => $nid))
         ->fields(array(
