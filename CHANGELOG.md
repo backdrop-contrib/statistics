@@ -2,77 +2,61 @@
 
 ## 1.x-1.2.0 (unreleased)
 
-Recommended upgrade: earlier versions did not record visits served from the
-page cache and counted bots as visitors, so most sites' figures were wrong.
+**Recommended upgrade.** Earlier versions did not record visits served from
+Backdrop's page cache and counted search engines and other bots as visitors,
+so on most sites the figures were far from accurate.
 
-Run update.php after upgrading. Updates 1003-1005 add a database column, hash
-stored session IDs, create the daily history table and switch recording to
-the browser.
+**After upgrading, run update.php.** Then note that:
+- The reports have moved to **Reports > Statistics**, as tabs.
+- Views that show the content "Pageviews" fields to other roles need the
+  **View content hits** permission granted.
 
-### Added
-- Visits are recorded from the visitor's browser by default, so pages served
-  from the page cache are counted and most bots, which do not run
-  JavaScript, are not. Recording on the server remains available as an
-  option; the settings page warns when it is used with page caching on. This
-  replaces the "Use Ajax to increment the counter" option.
-- Daily history: views per page per day, kept permanently and independent of
-  the access log's retention, with Views integration ("Statistics history")
-  for totals over any period, trends and charts.
-- Trending content in the Popular content block: most viewed over a rolling
-  1 to 30 days, from the daily history.
-- The settings page shows how much the access log, view counts and history
-  currently hold.
-
-### Security
-- The access log stored each visitor's live session ID, which is enough to
-  hijack that session for anyone who can read the log (a View exposing
-  "Session ID", a database backup). It now stores a SHA-256 hash, and
-  update 1004 hashes the existing rows.
-- The node "Pageviews" Views fields now respect the "View content hits"
-  permission, as the Content statistics fields already did. Views showing
-  them to other roles need that permission granted.
-- statistics.php only counts existing nodes of a counted content type.
-  Before, any number posted to it created a counter row.
-- Top visitors report escapes the hostname.
+### New
+- **Accurate counting with page caching.** Visits are now recorded from the
+  visitor's browser, so pages served from the page cache are counted, and
+  most bots, which do not run JavaScript, are not. Recording on the server
+  is still available; the settings page warns if it is used with page
+  caching on. This replaces the "Use Ajax to increment the counter" option.
+- **Daily history.** Views per page per day are kept permanently, however
+  long individual page visits are kept. Use them in Views ("Statistics
+  history") for totals over any period, trends and charts.
+- **Trending content** in the Popular content block: the most viewed over a
+  rolling 1 to 30 days.
+- **Clearer settings page**, written for site owners, showing how much is
+  currently recorded. Excluded roles have their own section and apply to
+  everything the module records.
+- Sortable, filterable "Views this week / month / year" fields under
+  Content statistics in Views. (#6)
+- The access log records each visitor's browser (user agent). (#26)
 
 ### Changed
-- Reports are grouped under Reports > Statistics as tabs
-  (`admin/reports/statistics`). The old `admin/reports/hits`, `pages`,
-  `visitors`, `referrers` and `access/%` paths are gone. (#27)
-- The access log records each visitor's user agent. (#26)
-- Excluded roles are now excluded from the access log as well as from
-  content view counts, and have their own section on the settings page
-  (previously hidden unless content view counting was on).
-- The settings page is written for site owners: plain labels ("Page visit
-  log", "Keep individual page visits for", "Content view counts"), and it
-  explains the difference between the access log and view counts.
-- New installs keep access log entries for 4 weeks (was 3 days).
-- In browser mode the report time columns show server response time.
+- Reports are grouped under Reports > Statistics as tabs. (#27)
+- Users with an excluded role are now left out of the access log too, not
+  only the view counts.
+- Viewing a content item's edit or revisions page no longer counts as a
+  view of it.
+- New installs keep individual page visits for 4 weeks (was 3 days).
 
 ### Fixed
-- Existing sites failed every logged page request with "Unknown column
-  'user_agent'" because no update added the column. (#34)
-- `statistics_exit()` fatal errors when hook_exit() runs on a page cache
-  hit with `page_cache_invoke_hooks` enabled. (#33)
-- Warning when a node page is not accessible. (#23)
-- Views: added sortable, filterable "Views this week / month / year" fields
-  under Content statistics. The node "Pageviews" fields sort and aggregate
-  on the node ID, so their help text now points to these. (#6, #4)
-- Views: the "Most recent view" field used a handler class that did not
-  exist.
-- `statistics.pages.inc` was duplicated, so the Track tabs failed with a
-  parse error.
-- PHP 8.1+ deprecations for requests without a User-Agent header or a page
-  title, and warnings for nodes that have never been viewed.
-- Sites upgraded from Drupal 7 no longer fail before the settings form has
-  been saved.
-- The referrer report escapes the host name in its LIKE condition.
-- Node statistics tokens no longer warn for nodes that have never been
-  viewed.
-- Views: removed a stray `name field` on the access ID argument.
-- With access logs kept forever ("Never"), report titles read "Top pages in
-  the past 0 sec".
-- Viewing a node's edit or revisions page was counted as a view of the
-  content.
-- statistics.php kept its settings in a global `$config`, which replaces
-  Backdrop's own and breaks any later config() call.
+- Sites upgraded to the development version failed every page with
+  "Unknown column 'user_agent'". (#34)
+- Fatal errors when `page_cache_invoke_hooks` is enabled. (#33)
+- Warning when a content page is not accessible. (#23)
+- Sorting or totalling the content "Pageviews" fields in Views gave wrong
+  numbers; use the Content statistics fields instead. (#4)
+- The Track tabs failed with an error.
+- The "Most recent view" Views field did not work.
+- PHP 8 warnings, including for content never viewed and requests without a
+  browser user agent.
+- Sites upgraded from Drupal 7 failed until the settings were saved.
+- Report titles read "in the past 0 sec" when page visits are kept forever.
+
+### Security hardening
+- The access log no longer stores visitors' session IDs, which could have
+  been used to take over a session by anyone able to read the log; it stores
+  a one-way hash instead, and existing entries are converted on update.
+- The content "Pageviews" Views fields now respect the View content hits
+  permission.
+- The visit counter only accepts existing content of a counted type.
+- The Top visitors report escapes host names, and the Top referrers report
+  escapes its search condition.
