@@ -1,9 +1,27 @@
 # Changelog
 
-## 1.x-1.1.0 (unreleased)
+## 1.x-1.2.0 (unreleased)
 
-Run update.php after upgrading: update 1003 adds a database column, and
-update 1004 replaces stored session IDs with their hashes.
+Recommended upgrade: earlier versions did not record visits served from the
+page cache and counted bots as visitors, so most sites' figures were wrong.
+
+Run update.php after upgrading. Updates 1003-1005 add a database column, hash
+stored session IDs, create the daily history table and switch recording to
+the browser.
+
+### Added
+- Visits are recorded from the visitor's browser by default, so pages served
+  from the page cache are counted and most bots, which do not run
+  JavaScript, are not. Recording on the server remains available as an
+  option; the settings page warns when it is used with page caching on. This
+  replaces the "Use Ajax to increment the counter" option.
+- Daily history: views per page per day, kept permanently and independent of
+  the access log's retention, with Views integration ("Statistics history")
+  for totals over any period, trends and charts.
+- Trending content in the Popular content block: most viewed over a rolling
+  1 to 30 days, from the daily history.
+- The settings page shows how much the access log, view counts and history
+  currently hold.
 
 ### Security
 - The access log stored each visitor's live session ID, which is enough to
@@ -13,8 +31,8 @@ update 1004 replaces stored session IDs with their hashes.
 - The node "Pageviews" Views fields now respect the "View content hits"
   permission, as the Content statistics fields already did. Views showing
   them to other roles need that permission granted.
-- The Ajax counter only counts existing nodes of a counted content type.
-  Before, any number posted to statistics.php created a counter row.
+- statistics.php only counts existing nodes of a counted content type.
+  Before, any number posted to it created a counter row.
 - Top visitors report escapes the hostname.
 
 ### Changed
@@ -25,9 +43,11 @@ update 1004 replaces stored session IDs with their hashes.
 - Excluded roles are now excluded from the access log as well as from
   content view counts, and have their own section on the settings page
   (previously hidden unless content view counting was on).
-- The settings page explains the difference between the access log and
-  content view counts, and that discarding old log entries does not affect
-  the counts.
+- The settings page is written for site owners: plain labels ("Page visit
+  log", "Keep individual page visits for", "Content view counts"), and it
+  explains the difference between the access log and view counts.
+- New installs keep access log entries for 4 weeks (was 3 days).
+- In browser mode the report time columns show server response time.
 
 ### Fixed
 - Existing sites failed every logged page request with "Unknown column
@@ -52,3 +72,7 @@ update 1004 replaces stored session IDs with their hashes.
 - Views: removed a stray `name field` on the access ID argument.
 - With access logs kept forever ("Never"), report titles read "Top pages in
   the past 0 sec".
+- Viewing a node's edit or revisions page was counted as a view of the
+  content.
+- statistics.php kept its settings in a global `$config`, which replaces
+  Backdrop's own and breaks any later config() call.

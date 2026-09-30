@@ -293,6 +293,97 @@ function statistics_views_data() {
     ),
   );
 
+  // ----------------------------------------------------------------
+  // 'statistics_daily' table: views per page per day.
+  $data['statistics_daily']['table']['group'] = t('Statistics history');
+  $data['statistics_daily']['table']['base'] = array(
+    'field' => 'path',
+    'title' => t('Statistics history'),
+    'help' => t('Views per page per day, kept after the access log is discarded.'),
+    'weight' => 11,
+  );
+  // From content, one row per day the content was viewed: aggregate on Hits
+  // for totals and trends.
+  $data['statistics_daily']['table']['join'] = array(
+    'node' => array(
+      'left_field' => 'nid',
+      'field' => 'nid',
+    ),
+  );
+
+  $data['statistics_daily']['day'] = array(
+    'title' => t('Day'),
+    'help' => t('The day of the views, as midnight in the site timezone.'),
+    'field' => array(
+      'handler' => 'views_handler_field_date',
+      'click sortable' => TRUE,
+    ),
+    'filter' => array(
+      'handler' => 'views_handler_filter_date',
+    ),
+    'sort' => array(
+      'handler' => 'views_handler_sort_date',
+    ),
+  );
+  $data['statistics_daily']['hits'] = array(
+    'title' => t('Hits'),
+    'help' => t('Number of views of the page that day. Use aggregation (SUM) for totals over several days.'),
+    'field' => array(
+      'handler' => 'statistics_views_handler_field_numeric',
+      'click sortable' => TRUE,
+    ),
+    'filter' => array(
+      'handler' => 'views_handler_filter_numeric',
+    ),
+    'sort' => array(
+      'handler' => 'views_handler_sort',
+    ),
+  );
+  $data['statistics_daily']['path'] = array(
+    'title' => t('Path'),
+    'help' => t('Internal path of the page viewed.'),
+    'field' => array(
+      'handler' => 'statistics_views_handler_field_accesslog_path',
+      'click sortable' => TRUE,
+    ),
+    'filter' => array(
+      'handler' => 'views_handler_filter_string',
+    ),
+    'sort' => array(
+      'handler' => 'views_handler_sort',
+    ),
+  );
+  $data['statistics_daily']['title'] = array(
+    'title' => t('Page title'),
+    'help' => t('Title of the page when last viewed that day.'),
+    'field' => array(
+      'handler' => 'statistics_views_handler_field_accesslog_path',
+      'click sortable' => TRUE,
+    ),
+    'filter' => array(
+      'handler' => 'views_handler_filter_string',
+    ),
+    'sort' => array(
+      'handler' => 'views_handler_sort',
+    ),
+  );
+  $data['statistics_daily']['nid'] = array(
+    'title' => t('Content'),
+    'help' => t('The content viewed, when the page is counted content.'),
+    'relationship' => array(
+      'handler' => 'views_handler_relationship',
+      'base' => 'node',
+      'base field' => 'nid',
+      'label' => t('Content'),
+    ),
+    'filter' => array(
+      'handler' => 'views_handler_filter_numeric',
+    ),
+    'argument' => array(
+      'handler' => 'views_handler_argument_numeric',
+    ),
+  );
+
   return $data;
 }
 

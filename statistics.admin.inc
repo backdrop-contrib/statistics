@@ -75,8 +75,8 @@ function statistics_top_pages() {
   $header = array(
     array('data' => t('Hits'), 'field' => 'hits', 'sort' => 'desc'),
     array('data' => t('Page'), 'field' => 'path'),
-    array('data' => t('Average page generation time'), 'field' => 'average_time'),
-    array('data' => t('Total page generation time'), 'field' => 'total_time')
+    array('data' => statistics_record_method() == 'browser' ? t('Average response time') : t('Average page generation time'), 'field' => 'average_time'),
+    array('data' => statistics_record_method() == 'browser' ? t('Total response time') : t('Total page generation time'), 'field' => 'total_time')
   );
 
   $query = db_select('accesslog', 'a', array('target' => 'slave'))->extend('PagerDefault')->extend('TableSort');
@@ -131,7 +131,7 @@ function statistics_top_visitors() {
   $header = array(
     array('data' => t('Hits'), 'field' => 'hits', 'sort' => 'desc'),
     array('data' => t('Visitor'), 'field' => 'u.name'),
-    array('data' => t('Total page generation time'), 'field' => 'total'),
+    array('data' => statistics_record_method() == 'browser' ? t('Total response time') : t('Total page generation time'), 'field' => 'total'),
   );
   $query = db_select('accesslog', 'a', array('target' => 'slave'))->extend('PagerDefault')->extend('TableSort');
   $query->leftJoin('users', 'u', 'a.uid = u.uid');
@@ -285,53 +285,80 @@ function statistics_access_log($aid) {
 /**
  * Form constructor for the statistics administration form.
  *
+ * Written for site owners rather than developers: each section says what it
+ * records, what uses it, and how much it currently holds.
+ *
  * @ingroup forms
- * @see system_settings_form()
+ * @see statistics_settings_form_submit()
  */
 function statistics_settings_form() {
   $config = config('statistics.settings');
+
+  $form['intro'] = array(
+    '#markup' => '<p>' . t('Statistics shows which pages and content are viewed, and where visitors came from. It is for recent activity and popular content on this site; for detailed visitor analytics, use a dedicated analytics service.') . '</p>',
+  );
+
+  // How visits are recorded.
+  $form['method'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('How visits are recorded'),
+  );
+  $form['method']['record_method'] = array(
+    '#type' => 'radios',
+    '#title' => t('Record visits'),
+    '#title_display' => 'invisible',
+    '#default_value' => statistics_record_method(),
+    '#options' => array(
+      'browser' => t('In the visitor\'s browser (recommended)'),
+      'server' => t('On the server'),
+    ),
+    'browser' => array(
+      '#description' => t('Each page reports its own visit once it has loaded. This counts pages served from the page cache, and skips most search engines and bots, which do not run JavaScript. Visitors with JavaScript turned off are not counted.'),
+    ),
+    'server' => array(
+      '#description' => t('Visits are recorded while the page is built. Pages served from the page cache are NOT recorded, and bots are counted as visitors. Records the time taken to build each page.'),
+    ),
+  );
+  if (statistics_record_method() == 'server' && config_get('system.core', 'cache')) {
+    $form['method']['cache_warning'] = array(
+      '#markup' => '<div class="messages warning">' . t('Page caching is enabled, so most anonymous visits are served from the cache and are not being recorded. Choose "In the visitor\'s browser" for accurate figures.') . '</div>',
+    );
+  }
+
   // Access log settings.
+  $log_count = db_query('SELECT COUNT(*) FROM {accesslog}')->fetchField();
+  $log_oldest = db_query('SELECT MIN(timestamp) FROM {accesslog}')->fetchField();
   $form['access'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Access log settings'),
-    '#description' => t('The access log records every page request, of any page, as a separate entry. The reports under <a href="@reports">Reports &gt; Statistics</a> and the Track tabs are built from it. It is separate from the content view counts below.', array('@reports' => url('admin/reports/statistics'))),
+    '#title' => t('Page visit log'),
+    '#description' => t('The page visit log (access log) records every page visit, of any page, as a separate entry. The reports under <a href="@reports">Reports &gt; Statistics</a> and the Track tabs are built from it. It is separate from the content view counts below.', array('@reports' => url('admin/reports/statistics'))) . ' ' . ($log_count ? t('It currently holds @count visits, the oldest from @date.', array('@count' => number_format($log_count), '@date' => format_date($log_oldest, 'medium'))) : t('It is currently empty.')),
   );
   $form['access']['enable_access_log'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Enable access log'),
+    '#title' => t('Record every page visit (access log)'),
     '#default_value' => $config->get('enable_access_log'),
-    '#description' => t('Record each page request: the page and its title, the referring page, the visitor\'s IP address and user account, their browser, and the time. Adds one database write per page.'),
+    '#description' => t('Record the page and its title, the referring page, the visitor\'s IP address and user account, their browser, and the time. Adds one database write per page.'),
   );
   $form['access']['flush_accesslog_timer'] = array(
     '#type' => 'select',
-    '#title' => t('Discard access logs older than'),
+    '#title' => t('Keep individual page visits for'),
     '#default_value' => $config->get('flush_accesslog_timer'),
-    '#options' => array(0 => t('Never')) + backdrop_map_assoc(array(10,3600, 10800, 21600, 32400, 43200, 86400, 172800, 259200, 604800, 1209600, 2419200, 4838400, 9676800), 'format_interval'),
-    '#description' => t('Access log entries older than this are deleted when <a href="@cron">cron</a> runs, so the reports only cover this period. Content view counts are not affected. "Never" keeps every entry, and the log grows with every page request. "10 sec" empties the log at each cron run, which is mainly useful for testing.', array('@cron' => url('admin/reports/status'))),
+    '#options' => array(0 => t('Never delete')) + backdrop_map_assoc(array(10, 3600, 10800, 21600, 32400, 43200, 86400, 172800, 259200, 604800, 1209600, 2419200, 4838400, 9676800), 'format_interval'),
+    '#description' => t('Older entries are deleted when <a href="@cron">cron</a> runs, so the reports only cover this period. Content view counts and the daily history are not affected. "Never delete" keeps every entry, and the log grows with every page visit. "10 sec" empties the log at each cron run, which is mainly useful for testing.', array('@cron' => url('admin/reports/status'))),
   );
 
   // Content counter settings.
+  $counted = db_query('SELECT COUNT(*) FROM {node_counter}')->fetchField();
   $form['content'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Content viewing counter settings'),
-    '#description' => t('Content view counts are a running total kept for each piece of content, separate from the access log. They are shown by the view counter on content, the Popular content block, Views and tokens.'),
+    '#title' => t('Content view counts'),
+    '#description' => t('Content view counts are a running total kept for each piece of content, separate from the page visit log. They are shown by the view counter on content, the Popular content block, Views and tokens.') . ' ' . format_plural($counted, '1 content item has been viewed so far.', '@count content items have been viewed so far.'),
   );
   $form['content']['count_content_views'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Count content views'),
+    '#title' => t('Count how often content is viewed'),
     '#default_value' => $config->get('count_content_views'),
     '#description' => t('Count each view of content of the types selected below. Totals are kept for today, this week, this month and this year, which cron resets to zero at the end of each period, and for all time, which is never reset.'),
-  );
-  $form['content']['count_content_views_ajax'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Use Ajax to increment the counter'),
-    '#default_value' => $config->get('count_content_views_ajax'),
-    '#description' => t('Perform the count asynchronously after page load rather than during page generation.'),
-    '#states' => array(
-      'disabled' => array(
-        ':input[name="count_content_views"]' => array('checked' => FALSE),
-      ),
-    ),
   );
 
   $types = node_type_get_types();
@@ -344,13 +371,21 @@ function statistics_settings_form() {
     '#type' => 'checkboxes',
     '#title' => t('Content types'),
     '#options' => $options,
-    '#default_value' => $config->get('count_node_types'),
+    '#default_value' => (array) $config->get('count_node_types'),
     '#description' => t('Choose one or more content types to count page views.'),
     '#states' => array(
       'visible' => array(
         ':input[name="count_content_views"]' => array('checked' => TRUE),
       ),
     ),
+  );
+
+  // Daily history is not a setting of its own: it follows the two above.
+  $history_days = db_query('SELECT COUNT(DISTINCT day) FROM {statistics_daily}')->fetchField();
+  $form['history'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Daily history'),
+    '#description' => t('A total of views per page per day, kept permanently and not affected by deleting old page visits. It covers every page while the page visit log is on, and counted content regardless. Use it in Views ("Statistics history") for charts and trends, and for the Trending list in the Popular content block.') . ' ' . format_plural($history_days, 'It currently covers 1 day.', 'It currently covers @count days.'),
   );
 
   // Excluded roles apply to the access log and the view counts alike, so they
@@ -363,8 +398,8 @@ function statistics_settings_form() {
     '#type' => 'checkboxes',
     '#title' => t('Exclude roles'),
     '#options' => array_map('check_plain', user_roles()),
-    '#default_value' => $config->get('node_count_excluded_roles'),
-    '#description' => t('Visits by users with any selected role are neither recorded in the access log nor counted as content views. If the administrator role is selected, user 1 is excluded too.'),
+    '#default_value' => (array) $config->get('node_count_excluded_roles'),
+    '#description' => t('Visits by users with any selected role are neither recorded nor counted. If the administrator role is selected, user 1 is excluded too.'),
   );
 
   $form['actions']['#type'] = 'actions';
@@ -376,14 +411,25 @@ function statistics_settings_form() {
   return $form;
 }
 
+/**
+ * Form submission handler for statistics_settings_form().
+ *
+ * Clears the page cache when recording changes, because cached pages carry
+ * (or lack) the script that reports visits from the browser.
+ */
 function statistics_settings_form_submit($form, &$form_state) {
+  $values = $form_state['values'];
   $config = config('statistics.settings');
-  $config->set('enable_access_log', $form_state['values']['enable_access_log']);
-  $config->set('flush_accesslog_timer', $form_state['values']['flush_accesslog_timer']);
-  $config->set('count_content_views', $form_state['values']['count_content_views']);
-  $config->set('count_content_views_ajax', $form_state['values']['count_content_views_ajax']);
-  $config->set('count_node_types', array_filter($form_state['values']['count_node_types']));
-  $config->set('node_count_excluded_roles', array_filter($form_state['values']['node_count_excluded_roles']));
+  $before = array($config->get('record_method'), $config->get('enable_access_log'), $config->get('count_content_views'));
+  $config->set('record_method', $values['record_method'] == 'server' ? 'server' : 'browser');
+  $config->set('enable_access_log', $values['enable_access_log']);
+  $config->set('flush_accesslog_timer', $values['flush_accesslog_timer']);
+  $config->set('count_content_views', $values['count_content_views']);
+  $config->set('count_node_types', array_filter($values['count_node_types']));
+  $config->set('node_count_excluded_roles', array_filter($values['node_count_excluded_roles']));
   $config->save();
+  if ($before != array($config->get('record_method'), $config->get('enable_access_log'), $config->get('count_content_views'))) {
+    cache('page')->flush();
+  }
   backdrop_set_message(t('The configuration options have been saved.'));
 }
