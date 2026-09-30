@@ -74,12 +74,21 @@ Track page visits tab.
 Displaying popular content
 --------------------------
 
-The module includes a Popular content block that can list the most viewed
+The module includes a **Popular content** block that can list the most viewed
 content today, this week, this month, this year and of all time, the content
 viewed most recently, and **trending** content: the most viewed over a rolling
-period of 1 to 30 days ending today, from the daily history. To use the block,
-enable content view counts on the statistics settings page, and then place and
-configure the block in a layout.
+period of 1 to 30 days ending today, from the daily history.
+
+To use it:
+
+1. On the statistics settings page, turn on "Count how often content is
+   viewed" and choose the content types to count. The block is only offered
+   while content view counts are on.
+2. Go to Structure > Layouts, edit the layout for the pages where it should
+   appear, and use "Add block" in a region. Choose "Popular content".
+3. In the block's settings, choose how many items each list shows. Every
+   list is disabled until given a number, so the block shows nothing until
+   at least one is set.
 
 Page view counter
 ------------------
