@@ -103,7 +103,9 @@ function statistics_top_pages() {
     $rows[] = array($page->hits, _statistics_format_item($page->title, $page->path), t('%time ms', array('%time' => round($page->average_time))), format_interval(round($page->total_time / 1000)));
   }
 
-  backdrop_set_title(t('Top pages in the past %interval', array('%interval' => format_interval(config_get('statistics.settings', 'flush_accesslog_timer')))), PASS_THROUGH);
+  $timer = config_get('statistics.settings', 'flush_accesslog_timer');
+  // With "Never" the report covers the whole log, not "the past 0 sec".
+  backdrop_set_title($timer ? t('Top pages in the past %interval', array('%interval' => format_interval($timer))) : t('Top pages'), PASS_THROUGH);
   $build['statistics_top_pages_table'] = array(
     '#theme' => 'table',
     '#header' => $header,
@@ -163,7 +165,9 @@ function statistics_top_visitors() {
     );
   }
 
-  backdrop_set_title(t('Top visitors in the past %interval', array('%interval' => format_interval(config_get('statistics.settings', 'flush_accesslog_timer')))), PASS_THROUGH);
+  $timer = config_get('statistics.settings', 'flush_accesslog_timer');
+  // With "Never" the report covers the whole log, not "the past 0 sec".
+  backdrop_set_title($timer ? t('Top visitors in the past %interval', array('%interval' => format_interval($timer))) : t('Top visitors'), PASS_THROUGH);
   $build['statistics_top_visitors_table'] = array(
     '#theme' => 'table',
     '#header' => $header,
@@ -185,7 +189,9 @@ function statistics_top_visitors() {
  *   A render array containing the top referrers information.
  */
 function statistics_top_referrers() {
-  backdrop_set_title(t('Top referrers in the past %interval', array('%interval' => format_interval(config_get('statistics.settings', 'flush_accesslog_timer')))), PASS_THROUGH);
+  $timer = config_get('statistics.settings', 'flush_accesslog_timer');
+  // With "Never" the report covers the whole log, not "the past 0 sec".
+  backdrop_set_title($timer ? t('Top referrers in the past %interval', array('%interval' => format_interval($timer))) : t('Top referrers'), PASS_THROUGH);
 
   $header = array(
     array('data' => t('Hits'), 'field' => 'hits', 'sort' => 'desc'),
@@ -288,31 +294,33 @@ function statistics_settings_form() {
   $form['access'] = array(
     '#type' => 'fieldset',
     '#title' => t('Access log settings'),
+    '#description' => t('The access log records every page request, of any page, as a separate entry. The reports under <a href="@reports">Reports &gt; Statistics</a> and the Track tabs are built from it. It is separate from the content view counts below.', array('@reports' => url('admin/reports/statistics'))),
   );
   $form['access']['enable_access_log'] = array(
     '#type' => 'checkbox',
     '#title' => t('Enable access log'),
     '#default_value' => $config->get('enable_access_log'),
-    '#description' => t('Log each page access. Required for referrer statistics.'),
+    '#description' => t('Record each page request: the page and its title, the referring page, the visitor\'s IP address and user account, their browser, and the time. Adds one database write per page.'),
   );
   $form['access']['flush_accesslog_timer'] = array(
     '#type' => 'select',
     '#title' => t('Discard access logs older than'),
     '#default_value' => $config->get('flush_accesslog_timer'),
     '#options' => array(0 => t('Never')) + backdrop_map_assoc(array(10,3600, 10800, 21600, 32400, 43200, 86400, 172800, 259200, 604800, 1209600, 2419200, 4838400, 9676800), 'format_interval'),
-    '#description' => t('Older access log entries (including referrer statistics) will be automatically discarded. (Requires a correctly configured <a href="@cron">cron maintenance task</a>.) If set to "Never", access logs will be kept indefinitely. Use 10 seconds to remove access logs immediately, also used for testing.', array('@cron' => url('admin/reports/status'))),
+    '#description' => t('Access log entries older than this are deleted when <a href="@cron">cron</a> runs, so the reports only cover this period. Content view counts are not affected. "Never" keeps every entry, and the log grows with every page request. "10 sec" empties the log at each cron run, which is mainly useful for testing.', array('@cron' => url('admin/reports/status'))),
   );
 
   // Content counter settings.
   $form['content'] = array(
     '#type' => 'fieldset',
     '#title' => t('Content viewing counter settings'),
+    '#description' => t('Content view counts are a running total kept for each piece of content, separate from the access log. They are shown by the view counter on content, the Popular content block, Views and tokens.'),
   );
   $form['content']['count_content_views'] = array(
     '#type' => 'checkbox',
     '#title' => t('Count content views'),
     '#default_value' => $config->get('count_content_views'),
-    '#description' => t('Increment a counter each time content is viewed.'),
+    '#description' => t('Count each view of content of the types selected below. Totals are kept for today, this week, this month and this year, which cron resets to zero at the end of each period, and for all time, which is never reset.'),
   );
   $form['content']['count_content_views_ajax'] = array(
     '#type' => 'checkbox',
@@ -345,18 +353,18 @@ function statistics_settings_form() {
     ),
   );
 
-  // Add user role access selection.
-  $form['content']['node_count_excluded_roles'] = array(
+  // Excluded roles apply to the access log and the view counts alike, so they
+  // have their own fieldset rather than depending on either checkbox.
+  $form['excluded'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Excluded roles'),
+  );
+  $form['excluded']['node_count_excluded_roles'] = array(
     '#type' => 'checkboxes',
     '#title' => t('Exclude roles'),
     '#options' => array_map('check_plain', user_roles()),
     '#default_value' => $config->get('node_count_excluded_roles'),
-    '#description' => t('Page views will not be counted for selected roles. If the administrator role is selected, user 1 will not be tracked.'),
-    '#states' => array(
-      'visible' => array(
-        ':input[name="count_content_views"]' => array('checked' => TRUE),
-      ),
-    ),
+    '#description' => t('Visits by users with any selected role are neither recorded in the access log nor counted as content views. If the administrator role is selected, user 1 is excluded too.'),
   );
 
   $form['actions']['#type'] = 'actions';

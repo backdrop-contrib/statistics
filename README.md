@@ -8,19 +8,25 @@ it, the previous page the user visited (referrer URL), and when it was viewed.
 These statistics are useful in determining how users are visiting and
 navigating your site.
 
-To enable collection of statistics, the Enable access log checkbox on the
-Statistics settings page must be checked. This access log is used to store
-data about every page accessed, such as the remote host's IP address, where
-they came from (referrer), what node they've viewed, and their user name.
-Enabling the log adds one database call per page displayed by Backdrop.
+The module keeps two separate kinds of statistics, switched on independently
+on the Statistics settings page (Configuration > System > Statistics).
 
-The Discard access logs older than setting on the settings page specifies the
-length of time entries are kept in the log before they are deleted. This
-setting requires a correctly configured cron maintenance task to run.
+**The access log** records every page request, of any page, as a separate
+entry: the page and its title, the referring page, the visitor's IP address
+and user account, their browser, and the time. The reports and the Track tabs
+are built from it. Enabling it adds one database write per page.
 
-Enable Count content views to turn on and off the node-counting functionality
-of this module. If it is turned on, an extra database query is added for each
-node displayed, which increments a counter.
+The "Discard access logs older than" setting deletes log entries older than
+the chosen period each time cron runs, so the reports only ever cover that
+period. It needs a correctly configured cron task. "Never" keeps every entry,
+and the log then grows with every page request.
+
+**Content view counts** are a running total kept for each piece of content,
+of the content types you select: views today, this week, this month, this
+year and of all time, plus when it was last viewed. Cron resets the day,
+week, month and year totals to zero at the end of each period; the all-time
+total is never reset. The counts are not affected by discarding the access
+log. Enabling them adds a database write for each content page viewed.
 
 Viewing site usage
 -------------

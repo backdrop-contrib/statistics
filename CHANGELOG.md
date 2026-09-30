@@ -23,7 +23,11 @@ update 1004 replaces stored session IDs with their hashes.
   `visitors`, `referrers` and `access/%` paths are gone. (#27)
 - The access log records each visitor's user agent. (#26)
 - Excluded roles are now excluded from the access log as well as from
-  content view counts.
+  content view counts, and have their own section on the settings page
+  (previously hidden unless content view counting was on).
+- The settings page explains the difference between the access log and
+  content view counts, and that discarding old log entries does not affect
+  the counts.
 
 ### Fixed
 - Existing sites failed every logged page request with "Unknown column
@@ -46,3 +50,5 @@ update 1004 replaces stored session IDs with their hashes.
 - Node statistics tokens no longer warn for nodes that have never been
   viewed.
 - Views: removed a stray `name field` on the access ID argument.
+- With access logs kept forever ("Never"), report titles read "Top pages in
+  the past 0 sec".
