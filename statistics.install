@@ -246,3 +246,20 @@ function statistics_update_1002() {
 
   $config->save();
 }
+
+/**
+ * Add the accesslog user_agent column to existing sites.
+ */
+function statistics_update_1003() {
+  // statistics_exit() writes this column on every logged page access, so a
+  // site installed before it was added to statistics_schema() fails every
+  // request until it exists.
+  if (!db_field_exists('accesslog', 'user_agent')) {
+    db_add_field('accesslog', 'user_agent', array(
+      'type' => 'varchar',
+      'length' => 255,
+      'not null' => FALSE,
+      'description' => 'User agent string with md5 hash for the requested page.',
+    ));
+  }
+}

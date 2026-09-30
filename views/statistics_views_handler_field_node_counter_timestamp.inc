@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of views_handler_field_node_counter_timestamp.
+ * Definition of statistics_views_handler_field_node_counter_timestamp.
  */
 
 /**
@@ -10,7 +10,7 @@
  *
  * @ingroup views_field_handlers
  */
-class views_handler_field_node_counter_timestamp extends views_handler_field_date {
+class statistics_views_handler_field_node_counter_timestamp extends views_handler_field_date {
 
   /**
    * {@inheritdoc}

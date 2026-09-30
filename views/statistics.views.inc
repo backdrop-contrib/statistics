@@ -57,6 +57,29 @@ function statistics_views_data() {
     ),
   );
 
+  // Week, month and year counts.
+  $periods = array(
+    'weekcount' => array(t('Views this week'), t('The number of times the node has been viewed this week.')),
+    'monthcount' => array(t('Views this month'), t('The number of times the node has been viewed this month.')),
+    'yearcount' => array(t('Views this year'), t('The number of times the node has been viewed this year.')),
+  );
+  foreach ($periods as $column => $text) {
+    $data['node_counter'][$column] = array(
+      'title' => $text[0],
+      'help' => $text[1],
+      'field' => array(
+        'handler' => 'statistics_views_handler_field_numeric',
+        'click sortable' => TRUE,
+      ),
+      'filter' => array(
+        'handler' => 'views_handler_filter_numeric',
+      ),
+      'sort' => array(
+        'handler' => 'views_handler_sort',
+      ),
+    );
+  }
+
   // Timestamp.
   $data['node_counter']['timestamp'] = array(
     'title' => t('Most recent view'),
@@ -318,4 +341,10 @@ function statistics_views_data_alter(&$data) {
       'help' => t('The total number of times the node has been viewed.'),
      ),
   );
+
+  // These fields look the count up per row while rendering, and their real
+  // field is the node ID, so sorting or aggregating on them acts on the nid.
+  foreach (array('daycount', 'weekcount', 'monthcount', 'yearcount', 'totalcount') as $column) {
+    $data['node'][$column]['field']['help'] .= ' ' . t('Display only: to sort, filter or aggregate, use the matching "Content statistics" field.');
+  }
 }
