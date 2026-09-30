@@ -1,6 +1,8 @@
 # Changelog
 
-## 1.x-1.2.0 (unreleased)
+## 1.x-1.2.0 (2026-09-30)
+
+Git tag: `1.x-1.2.0`.
 
 **Recommended upgrade.** Earlier versions did not record visits served from
 Backdrop's page cache and counted search engines and other bots as visitors,
