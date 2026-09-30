@@ -178,7 +178,7 @@ class StatisticsReportsTestCase extends StatisticsTestCase {
    * Verifies that 'Recent hits' renders properly and displays the added hit.
    */
   function testRecentHits() {
-    $this->backdropGet('admin/reports/hits');
+    $this->backdropGet('admin/reports/statistics/hits');
     $this->assertText('test', 'Hit title found.');
     $this->assertText('node/1', 'Hit URL found.');
     $this->assertText('Anonymous', 'Hit user found.');
@@ -188,7 +188,7 @@ class StatisticsReportsTestCase extends StatisticsTestCase {
    * Verifies that 'Top pages' renders properly and displays the added hit.
    */
   function testTopPages() {
-    $this->backdropGet('admin/reports/pages');
+    $this->backdropGet('admin/reports/statistics/pages');
     $this->assertText('test', 'Hit title found.');
     $this->assertText('node/1', 'Hit URL found.');
   }
@@ -197,7 +197,7 @@ class StatisticsReportsTestCase extends StatisticsTestCase {
    * Verifies that 'Top referrers' renders properly and displays the added hit.
    */
   function testTopReferrers() {
-    $this->backdropGet('admin/reports/referrers');
+    $this->backdropGet('admin/reports/statistics/referrers');
     $this->assertText('http://example.com', 'Hit referrer found.');
   }
 
@@ -215,10 +215,10 @@ class StatisticsReportsTestCase extends StatisticsTestCase {
    * Verifies that access logging is working and is reported correctly.
    */
   function testAccessLogging() {
-    $this->backdropGet('admin/reports/referrers');
-    $this->backdropGet('admin/reports/hits');
+    $this->backdropGet('admin/reports/statistics/referrers');
+    $this->backdropGet('admin/reports/statistics/hits');
     $this->assertText('Top referrers in the past 3 days', 'Hit title found.');
-    $this->assertText('admin/reports/referrers', 'Hit URL found.');
+    $this->assertText('admin/reports/statistics/referrers', 'Hit URL found.');
   }
 
   /**
@@ -274,7 +274,7 @@ class StatisticsBlockVisitorsTestCase extends StatisticsTestCase {
     // Verify the IP address from accesslog appears on the top visitors page
     // and that a 'block IP address' link is displayed.
     $this->backdropLogin($this->blocking_user);
-    $this->backdropGet('admin/reports/visitors');
+    $this->backdropGet('admin/reports/statistics/visitors');
     $this->assertText($test_ip_address, 'IP address found.');
     $this->assertText(t('block IP address'), 'Block IP link displayed');
 
@@ -290,7 +290,7 @@ class StatisticsBlockVisitorsTestCase extends StatisticsTestCase {
 
     // Verify that the block/unblock link on the top visitors page has been
     // altered.
-    $this->backdropGet('admin/reports/visitors');
+    $this->backdropGet('admin/reports/statistics/visitors');
     $this->assertText(t('unblock IP address'), 'Unblock IP address link displayed');
 
     // Unblock the IP address.
@@ -345,7 +345,7 @@ class StatisticsAdminTestCase extends BackdropWebTestCase {
     $this->assertFalse(config_get('statistics.settings', 'enable_access_log', 0), 'Access log is disabled by default.');
     $this->assertFalse(config_get('statistics.settings', 'count_content_views', 0), 'Count content view log is disabled by default.');
 
-    $this->backdropGet('admin/reports/pages');
+    $this->backdropGet('admin/reports/statistics/pages');
     $this->assertRaw(t('No statistics available.'), 'Verifying text shown when no statistics is available.');
 
     // Enable access log and counter on content view.
@@ -358,7 +358,7 @@ class StatisticsAdminTestCase extends BackdropWebTestCase {
     // Hit the node.
     $this->backdropGet('node/' . $this->test_node->nid);
 
-    $this->backdropGet('admin/reports/pages');
+    $this->backdropGet('admin/reports/statistics/pages');
     $this->assertText('node/1', 'Test node found.');
 
     // Hit the node again (the counter is incremented after the hit, so
@@ -418,7 +418,7 @@ class StatisticsAdminTestCase extends BackdropWebTestCase {
     $this->backdropGet("user/$account->uid/cancel/confirm/$timestamp/" . user_pass_rehash($account->pass, $timestamp, $account->login, $account->uid));
     $this->assertFalse(user_load($account->uid, TRUE), 'User is not found in the database.');
 
-    $this->backdropGet('admin/reports/visitors');
+    $this->backdropGet('admin/reports/statistics/visitors');
     $this->assertNoText($account->name, 'Did not find user in visitor statistics.');
   }
 
@@ -436,7 +436,7 @@ class StatisticsAdminTestCase extends BackdropWebTestCase {
     $this->backdropGet('node/' . $this->test_node->nid);
     $this->assertText('1 read', 'Node is read once.');
 
-    $this->backdropGet('admin/reports/pages');
+    $this->backdropGet('admin/reports/statistics/pages');
     $this->assertText('node/' . $this->test_node->nid, 'Hit URL found.');
 
     // statistics_cron will subtract the flush_accesslog_timer
@@ -445,7 +445,7 @@ class StatisticsAdminTestCase extends BackdropWebTestCase {
     sleep(2);
     $this->cronRun();
 
-    $this->backdropGet('admin/reports/pages');
+    $this->backdropGet('admin/reports/statistics/pages');
     $this->assertNoText('node/' . $this->test_node->nid, 'No hit URL found.');
 
     $result = db_select('node_counter', 'nc')

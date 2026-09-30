@@ -1,15 +1,17 @@
 {
     "_config_name": "statistics.settings",
+    "record_method": "browser",
     "count_content_views": 0,
-    "count_content_views_ajax": 0,
     "enable_access_log": 0,
-    "flush_accesslog_timer": 259200,
+    "flush_accesslog_timer": 2419200,
     "block_top_day_num": 0,
     "block_top_week_num": 0,
     "block_top_month_num": 0,
     "block_top_year_num": 0,
     "block_top_all_num": 0,
     "block_top_last_num": 0,
+    "block_top_trending_num": 0,
+    "block_trending_days": 7,
     "count_node_types": [],
     "node_count_excluded_roles": {
         "administrator": "administrator"

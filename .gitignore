@@ -1,0 +1,26 @@
+# Ignore temporary files and backups
+*.swp
+*.bak
+*~
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore IDE settings (VS Code, PHPStorm, etc.)
+.idea/
+.vscode/
+
+# Ignore local PHP error logs
+error_log
+php_errors.log
+
+# Ignore Claude Code project instructions (local dev only, not shipped)
+CLAUDE.md
+
+# Ignore the dev changelog (working notes; the public one is CHANGELOG.md)
+DEVCHANGELOG.md
+TODO.md
+
+# Local test harness: tied to the bertie dev site
+scripts/

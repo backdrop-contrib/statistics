@@ -5,83 +5,97 @@
  * Logs and displays access statistics for a site.
  */
 
+require_once __DIR__ . '/statistics.record.inc';
+
 /**
  * Implements hook_exit().
  *
- * Gathers statistics for page accesses.
+ * Records the visit when visits are recorded on the server. In browser mode
+ * statistics.php records it instead, so that pages served from the page cache
+ * are counted too.
  */
 function statistics_exit() {
+  // With $settings['page_cache_invoke_hooks'] enabled, hook_exit() also runs
+  // on page cache hits, before common.inc and menu.inc are loaded. Do not call
+  // backdrop_bootstrap() here: it would consume the bootstrap phases of the
+  // request still in progress.
+  if (backdrop_get_bootstrap_phase() < BACKDROP_BOOTSTRAP_FULL) {
+    return;
+  }
   $config = config('statistics.settings');
-  global $user;
-
-  // 1. Bootstrap for variable loading.
-  backdrop_bootstrap(BACKDROP_BOOTSTRAP_VARIABLES);
-
-  // 2. Efficient Single Exclusion Check (Guard Clause)
-  // If the statistics module is enabled AND the current user is an excluded role,
-  // we exit the function immediately to prevent any tracking.
-  // We use OR logic here because if EITHER count is enabled, we need the check.
-  if (($config->get('count_content_views') || $config->get('enable_access_log')) && statistics_node_count_excluded_role()) {
-    // Stop execution and prevent ALL tracking for this user.
+  if (statistics_record_method() != 'server' || !($config->get('count_content_views') || $config->get('enable_access_log'))) {
+    return;
+  }
+  // Excluded roles are neither logged nor counted.
+  if (statistics_node_count_excluded_role()) {
     return;
   }
 
-  // --- If we reach this point, the user is NOT an excluded role, or tracking is disabled. ---
+  $visit = statistics_current_visit();
+  $visit['referrer'] = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+  $visit['timer'] = (int) timer_read('page');
+  statistics_record_visit($visit);
+}
 
-  // 3. We are counting content views (Node-specific tracking).
-  // The role check is now removed from this block.
-  // We use the robust logic that also covers the front page node view.
+/**
+ * Returns how visits are recorded: 'browser' or 'server'.
+ *
+ * @return string
+ *   'browser' when the page's JavaScript reports each visit to
+ *   statistics.php, which counts pages served from the page cache; 'server'
+ *   when statistics_exit() records it while building the page.
+ */
+function statistics_record_method() {
+  return config_get('statistics.settings', 'record_method') == 'server' ? 'server' : 'browser';
+}
+
+/**
+ * Describes the page being built, for recording as a visit.
+ *
+ * @return array
+ *   The path, title and, on a node's own page, nid and node_type, in the form
+ *   statistics_record_visit() takes.
+ */
+function statistics_current_visit() {
+  $visit = array(
+    'path' => current_path(),
+    'title' => (string) backdrop_get_title(),
+    'nid' => 0,
+  );
+  // Only the node's own page is a view: node/1/edit and node/1/revisions load
+  // the same node but must not be counted.
   $node = menu_get_object('node');
-
-  if ($node && $config->get('count_content_views')) {
-    $count_node_types = $config->get('count_node_types');
-
-    // Check node type and AJAX setting (original module logic)
-    if (in_array($node->type, $count_node_types) && !$config->get('count_content_views_ajax')) {
-      // The original path check (arg(0) == 'node'...) is no longer needed
-      // because menu_get_object() is more robust.
-
-      // A node has been viewed, so update the node's counters.
-      db_merge('node_counter')
-        ->key(array('nid' => $node->nid)) // Use $node->nid directly
-        ->fields(array(
-          'yearcount' => 1,
-          'monthcount' => 1,
-          'weekcount' => 1,
-          'daycount' => 1,
-          'totalcount' => 1,
-          'timestamp' => REQUEST_TIME,
-        ))
-        ->expression('yearcount', 'yearcount + 1')
-        ->expression('monthcount', 'monthcount + 1')
-        ->expression('weekcount', 'weekcount + 1')
-        ->expression('daycount', 'daycount + 1')
-        ->expression('totalcount', 'totalcount + 1')
-        ->execute();
-    }
+  if ($node && !empty($node->nid) && $visit['path'] == 'node/' . $node->nid) {
+    $visit['nid'] = $node->nid;
+    $visit['node_type'] = $node->type;
   }
+  return $visit;
+}
 
-  // 4. Log the page access (General URL tracking).
-  // The role check is now removed from this block.
-  if ($config->get('enable_access_log')) {
-    // For anonymous users unicode.inc will not have been loaded.
-    include_once BACKDROP_ROOT . '/core/includes/unicode.inc';
-
-    // Log this page access.
-    db_insert('accesslog')
-      ->fields(array(
-        'title' => truncate_utf8(strip_tags(backdrop_get_title()), 255),
-        'path' => truncate_utf8(_statistics_clean_utf8($_GET['q']), 255),
-        'url' => isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '',
-        'hostname' => ip_address(),
-        'uid' => $user->uid,
-        'sid' => session_id(),
-        'timer' => (int) timer_read('page'),
-        'timestamp' => REQUEST_TIME,
-        'user_agent' => substr($_SERVER['HTTP_USER_AGENT']??null, 0, 222) . ' ' . md5($_SERVER['HTTP_USER_AGENT']??null)
-      ))
-      ->execute();
+/**
+ * Implements hook_preprocess_page().
+ *
+ * In browser mode, adds the script that reports this visit. It becomes part
+ * of the cached page, so every visitor served from the page cache reports
+ * their own visit.
+ */
+function statistics_preprocess_page(&$variables) {
+  $config = config('statistics.settings');
+  if (statistics_record_method() != 'browser' || !($config->get('count_content_views') || $config->get('enable_access_log'))) {
+    return;
   }
+  // Only logged-in users can be excluded, and their pages are never cached, so
+  // skipping the script here is safe. statistics.php checks again.
+  if (statistics_node_count_excluded_role()) {
+    return;
+  }
+  $visit = statistics_current_visit();
+  unset($visit['node_type']);
+  backdrop_add_js(array('statistics' => array(
+    'url' => url(backdrop_get_path('module', 'statistics') . '/statistics.php', array('absolute' => TRUE)),
+    'data' => $visit,
+  )), 'setting');
+  backdrop_add_js(backdrop_get_path('module', 'statistics') . '/statistics.js', array('scope' => 'footer'));
 }
 
 /**
@@ -105,25 +119,6 @@ function statistics_permission() {
  * Implements hook_node_view().
  */
 function statistics_node_view($node, $view_mode) {
-  $config = config('statistics.settings');
-  $count_node_types = $config->get('count_node_types');
-  global $user;
-
-  // Attach Ajax node count statistics if configured.
-  if ($config->get('count_content_views') && $config->get('count_content_views_ajax') && in_array($node->type, $count_node_types) && !statistics_node_count_excluded_role()) {
-    if (!empty($node->nid) && $view_mode == 'full' && node_is_page($node) && empty($node->in_preview)) {
-      $statistics = backdrop_get_path('module', 'statistics') . '/statistics.js';
-      $node->content['#attached']['js'][$statistics] = array(
-        'scope' => 'footer',
-      );
-      $settings = array('data' => array('nid' => $node->nid), 'url' => url(backdrop_get_path('module', 'statistics') . '/statistics.php', array('absolute' => TRUE)));
-      $node->content['#attached']['js'][] = array(
-        'data' => array('statistics' => $settings),
-        'type' => 'setting',
-      );
-    }
-  }
-
   if ($view_mode != 'rss') {
     if (user_access('view post access counter')) {
       $statistics = statistics_get($node->nid);
@@ -317,6 +312,42 @@ function statistics_title_list($dbfield, $dbrows) {
   return FALSE;
 }
 
+/**
+ * Returns the most viewed content over a rolling number of days.
+ *
+ * Unlike the day/week/month counts, which cron resets at the end of each
+ * period, this sums the daily history, so "the last 7 days" always means the
+ * seven days up to today.
+ *
+ * @param int $days
+ *   Number of days, including today.
+ * @param int $rows
+ *   Number of content items to return.
+ *
+ * @return SelectQuery
+ *   A query result with the node ID, title, owner's user ID and name, in the
+ *   form node_title_list() takes.
+ */
+function statistics_trending_list($days, $rows) {
+  $since = statistics_day_start(REQUEST_TIME - 86400 * (max(1, (int) $days) - 1));
+  $query = db_select('node', 'n');
+  $query->addTag('node_access');
+  $query->join('statistics_daily', 'd', 'n.nid = d.nid');
+  $query->join('users', 'u', 'n.uid = u.uid');
+  $query->addExpression('SUM(d.hits)', 'hits');
+  return $query
+    ->fields('n', array('nid', 'title'))
+    ->fields('u', array('uid', 'name'))
+    ->condition('d.day', $since, '>=')
+    ->condition('n.status', 1)
+    ->groupBy('n.nid')
+    ->groupBy('n.title')
+    ->groupBy('u.uid')
+    ->groupBy('u.name')
+    ->orderBy('hits', 'DESC')
+    ->range(0, (int) $rows)
+    ->execute();
+}
 
 /**
  * Retrieves a node's "view statistics".
@@ -403,6 +434,19 @@ function statistics_block_configure($delta = '') {
     '#options' => $numbers,
     '#description' => t('How many content items to display in "recently viewed" list.'),
   );
+  $form['block_top_trending_num'] = array(
+    '#type' => 'select',
+    '#title' => t('Number of trending content items to display'),
+    '#default_value' => $config->get('block_top_trending_num'),
+    '#options' => $numbers,
+    '#description' => t('Most viewed over a rolling period ending today, from the daily history.'),
+  );
+  $form['block_trending_days'] = array(
+    '#type' => 'select',
+    '#title' => t('Trending over the last'),
+    '#default_value' => $config->get('block_trending_days') ? $config->get('block_trending_days') : 7,
+    '#options' => array(1 => t('1 day'), 3 => t('3 days'), 7 => t('7 days'), 14 => t('14 days'), 30 => t('30 days')),
+  );
 
   return $form;
 }
@@ -418,6 +462,8 @@ function statistics_block_save($delta = '', $edit = array()) {
   $config->set('block_top_year_num', $edit['block_top_year_num']);
   $config->set('block_top_all_num', $edit['block_top_all_num']);
   $config->set('block_top_last_num', $edit['block_top_last_num']);
+  $config->set('block_top_trending_num', $edit['block_top_trending_num']);
+  $config->set('block_trending_days', $edit['block_trending_days']);
   $config->save();
 }
 
@@ -428,6 +474,13 @@ function statistics_block_view($delta = '') {
   $config = config('statistics.settings');
   if (user_access('access content')) {
     $content = array();
+
+    $trendingtop = $config->get('block_top_trending_num');
+    $trending_days = $config->get('block_trending_days') ? $config->get('block_trending_days') : 7;
+    if ($trendingtop && ($result = statistics_trending_list($trending_days, $trendingtop)) && ($node_title_list = node_title_list($result, format_plural($trending_days, 'Trending today:', 'Trending, last @count days:')))) {
+      $content['top_trending'] = $node_title_list;
+      $content['top_trending']['#suffix'] = '<br />';
+    }
 
     $daytop = $config->get('block_top_day_num');
     if ($daytop && ($result = statistics_title_list('daycount', $daytop)) && ($node_title_list = node_title_list($result, t("Today's:")))) {
@@ -516,6 +569,9 @@ function statistics_node_delete($node) {
   db_delete('node_counter')
     ->condition('nid', $node->nid)
     ->execute();
+  db_delete('statistics_daily')
+    ->condition('nid', $node->nid)
+    ->execute();
 }
 
 /**
@@ -550,31 +606,6 @@ function statistics_update_index() {
 
 
 /**
- * Determines if the current user is excluded from node count tracking based on
- * his role.
- *
- * @return
- *   boolean TRUE if excluded..
- */
-function statistics_node_count_excluded_role() {
-  global $user;
-  $config = config('statistics.settings');
-  $admin_role = config_get('system.core', 'user_admin_role');
-  $excluded = FALSE;
-
-  if (array_intersect($user->roles, $config->get('node_count_excluded_roles'))) {
-    $excluded = TRUE;
-  }
-  // If the admin role is excluded, we assume user 1 shouldn't be tracked
-  // either.
-  if (in_array($admin_role, $config->get('node_count_excluded_roles')) && $user->uid == 1) {
-    $excluded = TRUE;
-  }
-
-  return $excluded;
-}
-
-/**
  * Implements hook_config_info().
  */
 function statistics_config_info() {
@@ -606,15 +637,4 @@ function statistics_autoload_info() {
     'statistics_views_handler_field_node_counter_timestamp' => 'views/statistics_views_handler_field_node_counter_timestamp.inc',
     'statistics_views_handler_field_numeric' => 'views/statistics_views_handler_field_numeric.inc',
   );
-}
-
-/**
- * Clean a path that might be invalid UTF-8.
- */
-function _statistics_clean_utf8($path) {
-  if (backdrop_validate_utf8($path)) {
-    return $path;
-  }
-  // Oh nos! Invalid UTF-8. Now we fix it.
-  return backdrop_convert_to_utf8($path, 'CP1252');
 }

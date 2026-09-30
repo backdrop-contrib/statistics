@@ -22,7 +22,7 @@ function statistics_schema() {
         'length' => 128,
         'not null' => TRUE,
         'default' => '',
-        'description' => 'Browser session ID of user that visited page.',
+        'description' => 'SHA-256 hash of the browser session ID of the user that visited the page.',
       ),
       'title' => array(
         'type' => 'varchar',
@@ -148,7 +148,64 @@ function statistics_schema() {
     'primary key' => array('nid'),
   );
 
+  $schema['statistics_daily'] = statistics_daily_schema();
+
   return $schema;
+}
+
+/**
+ * Returns the schema of the daily history table.
+ *
+ * Shared by statistics_schema() and statistics_update_1005(), so fresh
+ * installs and upgraded sites get the same table.
+ *
+ * @return array
+ *   A Schema API table definition.
+ */
+function statistics_daily_schema() {
+  return array(
+    'description' => 'Page views per page per day, kept after the access log is discarded.',
+    'fields' => array(
+      'day' => array(
+        'description' => 'Timestamp of midnight at the start of the day, in the site timezone.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'path' => array(
+        'description' => 'Internal path of the page viewed.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'nid' => array(
+        'description' => 'The {node}.nid when the page is counted content, otherwise 0.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'title' => array(
+        'description' => 'Title of the page when last viewed that day.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+      ),
+      'hits' => array(
+        'description' => 'Number of views of the page that day.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('day', 'path'),
+    'indexes' => array(
+      'nid_day' => array('nid', 'day'),
+    ),
+  );
 }
 
 /**
@@ -245,4 +302,59 @@ function statistics_update_1002() {
   $config->clear('year_timestamp');
 
   $config->save();
+}
+
+/**
+ * Add the accesslog user_agent column to existing sites.
+ */
+function statistics_update_1003() {
+  // statistics_exit() writes this column on every logged page access, so a
+  // site installed before it was added to statistics_schema() fails every
+  // request until it exists.
+  if (!db_field_exists('accesslog', 'user_agent')) {
+    db_add_field('accesslog', 'user_agent', array(
+      'type' => 'varchar',
+      'length' => 255,
+      'not null' => FALSE,
+      'description' => 'User agent string with md5 hash for the requested page.',
+    ));
+  }
+}
+
+/**
+ * Replace session IDs stored in the access log with their hashes.
+ */
+function statistics_update_1004() {
+  // Earlier versions stored the live session ID, which is enough to hijack
+  // the session. SHA2() gives the same lowercase hex as PHP's
+  // hash('sha256'), so old and new rows from one session still match.
+  // A 64-character value is already a hash.
+  db_update('accesslog')
+    ->expression('sid', 'SHA2(sid, 256)')
+    ->condition('sid', '', '<>')
+    ->where('CHAR_LENGTH(sid) <> 64')
+    ->execute();
+}
+
+/**
+ * Add daily history, and record visits in the browser.
+ */
+function statistics_update_1005() {
+  if (!db_table_exists('statistics_daily')) {
+    db_create_table('statistics_daily', statistics_daily_schema());
+  }
+
+  // Recording from the browser counts pages served from the page cache, which
+  // server-side recording misses. It replaces the Ajax counter option.
+  $config = config('statistics.settings');
+  $config->set('record_method', 'browser');
+  $config->clear('count_content_views_ajax');
+  if ($config->get('block_top_trending_num') === NULL) {
+    $config->set('block_top_trending_num', 0);
+    $config->set('block_trending_days', 7);
+  }
+  $config->save();
+
+  // Cached pages must be rebuilt to include the reporting script.
+  cache('page')->flush();
 }
