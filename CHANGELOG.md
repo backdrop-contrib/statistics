@@ -2,6 +2,9 @@
 
 ## 1.x-1.2.1 (unreleased)
 
+- README: lead with what the module does; add a Contributors section,
+  including a note that recent work was assisted by AI.
+
 ## 1.x-1.2.0 (2026-09-30)
 
 Git tag: `1.x-1.2.0`.

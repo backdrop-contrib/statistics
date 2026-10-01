@@ -143,3 +143,18 @@ Current Maintainers
 
 - Docwilmot (https://github.com/docwilmot)
 - DrAlbany (https://github.com/albanycomputers)
+
+## Contributors:
+- docwilmot
+- Steve Moorhouse - Zulip (DrAlbany)
+- Assisted by AI
+
+- dbuytaert
+- webchick
+- goba
+- drumm
+- bugfolder
+- DavidRothstein
+- jhodgdon-drp
+- robertgarrigos
+- klonos
